@@ -227,7 +227,9 @@ sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y in
     python-scapy            \
     tcptraceroute           \
     mtr-tiny                \
-    ipmitool
+    ipmitool                \
+    ssh                     \
+    memtester
 
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y download \
     grub-pc-bin

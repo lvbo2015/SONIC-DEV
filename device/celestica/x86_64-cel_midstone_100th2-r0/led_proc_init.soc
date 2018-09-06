@@ -1,0 +1,13 @@
+#Enable all ports
+port all en=1
+sleep 4
+port hg encap=ieee
+sleep 1
+linkscan 250000; port xe,ce linkscan=on
+
+#Load LED
+#m0 load 0 0x0 /etc/bcm/linkscan_led_fw.bin
+#m0 load 0 0x3800 /etc/bcm/custom_led.bin
+#led auto on; led start
+
+
