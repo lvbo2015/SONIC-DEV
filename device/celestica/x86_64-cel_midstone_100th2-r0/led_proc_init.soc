@@ -1,13 +1,10 @@
-#Enable all ports
-port all en=1
-sleep 4
-port hg encap=ieee
-sleep 1
-linkscan 250000; port xe,ce linkscan=on
+# Download LED code into LED processor and enable (if applicable).
 
-#Load LED
-#m0 load 0 0x0 /etc/bcm/linkscan_led_fw.bin
-#m0 load 0 0x3800 /etc/bcm/custom_led.bin
-#led auto on; led start
-
-
+led 0 load /usr/share/sonic/platform/ledcode;
+led 0 auto on; led 0 start;
+led 1 load /usr/share/sonic/platform/ledcode;
+led 1 auto on; led 1 start;
+led 2 load /usr/share/sonic/platform/ledcode;
+led 2 auto on; led 3 start;
+led 2 load /usr/share/sonic/platform/ledcode;
+led 2 auto on; led 3 start

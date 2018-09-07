@@ -1,0 +1,1066 @@
+ipv6_lpm_128b_enable=0x1
+l2_mem_entries=32768
+l2xmsg_mode=1
+l3_max_ecmp_mode=1
+l3_mem_entries=16384
+lpm_scaling_enable=1
+max_vp_lags=0
+mem_cache_enable=0
+miim_intr_enable=0
+module_64ports=1
+oversubscribe_mode=1
+parity_enable=0
+pbmp_xport_xe=0x3fffc0000ffff00003fffc0001fffe
+
+
+ptp_ts_pll_fref=50000000
+ptp_bs_fref_0=50000000
+ptp_bs_fref_1=50000000
+
+portmap_1.0=1:100
+portmap_2.0=5:100
+portmap_3.0=13:100
+portmap_4.0=9:100
+portmap_5.0=17:100
+portmap_6.0=21:100
+portmap_7.0=29:100
+portmap_8.0=25:100
+portmap_9.0=33:100
+portmap_10.0=37:100
+portmap_11.0=45:100
+portmap_12.0=41:100
+portmap_13.0=49:100
+portmap_14.0=53:100
+portmap_15.0=61:100
+portmap_16.0=57:100
+portmap_34.0=65:100
+portmap_35.0=69:100
+portmap_36.0=77:100
+portmap_37.0=73:100
+portmap_38.0=81:100
+portmap_39.0=85:100
+portmap_40.0=93:100
+portmap_41.0=89:100
+portmap_42.0=97:100
+portmap_43.0=101:100
+portmap_44.0=109:100
+portmap_45.0=105:100
+portmap_46.0=113:100
+portmap_47.0=117:100
+portmap_48.0=125:100
+portmap_49.0=121:100
+portmap_68.0=129:100
+portmap_69.0=133:100
+portmap_70.0=141:100
+portmap_71.0=137:100
+portmap_72.0=145:100
+portmap_73.0=149:100
+portmap_74.0=157:100
+portmap_75.0=153:100
+portmap_76.0=161:100
+portmap_77.0=165:100
+portmap_78.0=173:100
+portmap_79.0=169:100
+portmap_80.0=177:100
+portmap_81.0=181:100
+portmap_82.0=189:100
+portmap_83.0=185:100
+portmap_102.0=193:100
+portmap_103.0=197:100
+portmap_104.0=205:100
+portmap_105.0=201:100
+portmap_106.0=209:100
+portmap_107.0=213:100
+portmap_108.0=221:100
+portmap_109.0=217:100
+portmap_110.0=225:100
+portmap_111.0=229:100
+portmap_112.0=237:100
+portmap_113.0=233:100
+portmap_114.0=241:100
+portmap_115.0=245:100
+portmap_116.0=253:100
+portmap_117.0=249:100
+
+#portmap_66.0=257:10
+#portmap_100.0=259:10
+
+#FC0 lane swap
+phy_chain_tx_lane_map_physical{1.0}=0x3210
+phy_chain_rx_lane_map_physical{1.0}=0x0213
+
+#FC1 lane swap
+phy_chain_tx_lane_map_physical{5.0}=0x3210
+phy_chain_rx_lane_map_physical{5.0}=0x3210
+
+#FC3 lane swap
+phy_chain_tx_lane_map_physical{13.0}=0x3210
+phy_chain_rx_lane_map_physical{13.0}=0x1302
+
+#FC2 lane swap
+phy_chain_tx_lane_map_physical{9.0}=0x3102
+phy_chain_rx_lane_map_physical{9.0}=0x1302
+
+#FC4 lane swap
+phy_chain_tx_lane_map_physical{17.0}=0x3210
+phy_chain_rx_lane_map_physical{17.0}=0x3210
+
+#FC5 lane swap
+phy_chain_tx_lane_map_physical{21.0}=0x3210
+phy_chain_rx_lane_map_physical{21.0}=0x3012
+
+#FC7 lane swap
+phy_chain_tx_lane_map_physical{29.0}=0x3210
+phy_chain_rx_lane_map_physical{29.0}=0x3210
+
+#FC6 lane swap
+phy_chain_tx_lane_map_physical{25.0}=0x3210
+phy_chain_rx_lane_map_physical{25.0}=0x3201
+
+#FC8 lane swap
+phy_chain_tx_lane_map_physical{33.0}=0x1203
+phy_chain_rx_lane_map_physical{33.0}=0x0213
+
+#FC9 lane swap
+phy_chain_tx_lane_map_physical{37.0}=0x3021
+phy_chain_rx_lane_map_physical{37.0}=0x3012
+
+#FC11 lane swap
+phy_chain_tx_lane_map_physical{45.0}=0x3210
+phy_chain_rx_lane_map_physical{45.0}=0x1032
+
+#FC10 lane swap
+phy_chain_tx_lane_map_physical{41.0}=0x3021
+phy_chain_rx_lane_map_physical{41.0}=0x3012
+
+#FC12 lane swap
+phy_chain_tx_lane_map_physical{49.0}=0x0213
+phy_chain_rx_lane_map_physical{49.0}=0x0213
+
+#FC13 lane swap
+phy_chain_tx_lane_map_physical{53.0}=0x3210
+phy_chain_rx_lane_map_physical{53.0}=0x3012
+
+#FC15 lane swap
+phy_chain_tx_lane_map_physical{61.0}=0x3210
+phy_chain_rx_lane_map_physical{61.0}=0x1032
+
+#FC14 lane swap
+phy_chain_tx_lane_map_physical{57.0}=0x3021
+phy_chain_rx_lane_map_physical{57.0}=0x3012
+
+#FC16 lane swap
+phy_chain_tx_lane_map_physical{65.0}=0x0213
+phy_chain_rx_lane_map_physical{65.0}=0x0213
+
+#FC17 lane swap
+phy_chain_tx_lane_map_physical{69.0}=0x3210
+phy_chain_rx_lane_map_physical{69.0}=0x3012
+
+#FC19 lane swap
+phy_chain_tx_lane_map_physical{77.0}=0x3210
+phy_chain_rx_lane_map_physical{77.0}=0x1032
+
+#FC18 lane swap
+phy_chain_tx_lane_map_physical{73.0}=0x3021
+phy_chain_rx_lane_map_physical{73.0}=0x3012
+
+#FC20 lane swap
+phy_chain_tx_lane_map_physical{81.0}=0x0213
+phy_chain_rx_lane_map_physical{81.0}=0x0213
+
+#FC21 lane swap
+phy_chain_tx_lane_map_physical{85.0}=0x3210
+phy_chain_rx_lane_map_physical{85.0}=0x3012
+
+#FC23 lane swap
+phy_chain_tx_lane_map_physical{93.0}=0x3210
+phy_chain_rx_lane_map_physical{93.0}=0x1032
+
+#FC22 lane swap
+phy_chain_tx_lane_map_physical{89.0}=0x3021
+phy_chain_rx_lane_map_physical{89.0}=0x3012
+
+#FC24 lane swap
+phy_chain_tx_lane_map_physical{97.0}=0x1203
+phy_chain_rx_lane_map_physical{97.0}=0x1302
+
+#FC25 lane swap
+phy_chain_tx_lane_map_physical{101.0}=0x3210
+phy_chain_rx_lane_map_physical{101.0}=0x3012
+
+#FC27 lane swap
+phy_chain_tx_lane_map_physical{109.0}=0x3210
+phy_chain_rx_lane_map_physical{109.0}=0x1203
+
+#FC26 lane swap
+phy_chain_tx_lane_map_physical{105.0}=0x2013
+phy_chain_rx_lane_map_physical{105.0}=0x0132
+
+#FC28 lane swap
+phy_chain_tx_lane_map_physical{113.0}=0x2013
+phy_chain_rx_lane_map_physical{113.0}=0x0213
+
+#FC29 lane swap
+phy_chain_tx_lane_map_physical{117.0}=0x0213
+phy_chain_rx_lane_map_physical{117.0}=0x3120
+
+#FC31 lane swap
+phy_chain_tx_lane_map_physical{125.0}=0x3210
+phy_chain_rx_lane_map_physical{125.0}=0x3012
+
+#FC30 lane swap
+phy_chain_tx_lane_map_physical{121.0}=0x3210
+phy_chain_rx_lane_map_physical{121.0}=0x2031
+
+#FC32 lane swap
+phy_chain_tx_lane_map_physical{129.0}=0x1320
+phy_chain_rx_lane_map_physical{129.0}=0x0213
+
+#FC33 lane swap
+phy_chain_tx_lane_map_physical{133.0}=0x3120
+phy_chain_rx_lane_map_physical{133.0}=0x3120
+
+#FC35 lane swap
+phy_chain_tx_lane_map_physical{141.0}=0x0123
+phy_chain_rx_lane_map_physical{141.0}=0x3012
+
+#FC34 lane swap
+phy_chain_tx_lane_map_physical{137.0}=0x0123
+phy_chain_rx_lane_map_physical{137.0}=0x2031
+
+#FC36 lane swap
+phy_chain_tx_lane_map_physical{145.0}=0x0312
+phy_chain_rx_lane_map_physical{145.0}=0x3120
+
+#FC37 lane swap
+phy_chain_tx_lane_map_physical{149.0}=0x3210
+phy_chain_rx_lane_map_physical{149.0}=0x1032
+
+#FC39 lane swap
+phy_chain_tx_lane_map_physical{157.0}=0x3201
+phy_chain_rx_lane_map_physical{157.0}=0x1203
+
+#FC38 lane swap
+phy_chain_tx_lane_map_physical{153.0}=0x3021
+phy_chain_rx_lane_map_physical{153.0}=0x3210
+
+#FC40 lane swap
+phy_chain_tx_lane_map_physical{161.0}=0x3210
+phy_chain_rx_lane_map_physical{161.0}=0x2301
+
+#FC41 lane swap
+phy_chain_tx_lane_map_physical{165.0}=0x0123
+phy_chain_rx_lane_map_physical{165.0}=0x1320
+
+#FC43 lane swap
+phy_chain_tx_lane_map_physical{173.0}=0x3210
+phy_chain_rx_lane_map_physical{173.0}=0x0321
+
+#FC42 lane swap
+phy_chain_tx_lane_map_physical{169.0}=0x3012
+phy_chain_rx_lane_map_physical{169.0}=0x0123
+
+#FC44 lane swap
+phy_chain_tx_lane_map_physical{177.0}=0x3210
+phy_chain_rx_lane_map_physical{177.0}=0x2103
+
+#FC45 lane swap
+phy_chain_tx_lane_map_physical{181.0}=0x0123
+phy_chain_rx_lane_map_physical{181.0}=0x3021
+
+#FC47 lane swap
+phy_chain_tx_lane_map_physical{189.0}=0x0123
+phy_chain_rx_lane_map_physical{189.0}=0x3210
+
+#FC46 lane swap
+phy_chain_tx_lane_map_physical{185.0}=0x3012
+phy_chain_rx_lane_map_physical{185.0}=0x1032
+
+#FC48 lane swap
+phy_chain_tx_lane_map_physical{193.0}=0x3210
+phy_chain_rx_lane_map_physical{193.0}=0x2103
+
+#FC49 lane swap
+phy_chain_tx_lane_map_physical{197.0}=0x0123
+phy_chain_rx_lane_map_physical{197.0}=0x3021
+
+#FC51 lane swap
+phy_chain_tx_lane_map_physical{205.0}=0x0123
+phy_chain_rx_lane_map_physical{205.0}=0x3210
+
+#FC50 lane swap
+phy_chain_tx_lane_map_physical{201.0}=0x3012
+phy_chain_rx_lane_map_physical{201.0}=0x1032
+
+#FC52 lane swap
+phy_chain_tx_lane_map_physical{209.0}=0x3210
+phy_chain_rx_lane_map_physical{209.0}=0x2103
+
+#FC53 lane swap
+phy_chain_tx_lane_map_physical{213.0}=0x0123
+phy_chain_rx_lane_map_physical{213.0}=0x3021
+
+#FC55 lane swap
+phy_chain_tx_lane_map_physical{221.0}=0x3102
+phy_chain_rx_lane_map_physical{221.0}=0x3210
+
+#FC54 lane swap
+phy_chain_tx_lane_map_physical{217.0}=0x3012
+phy_chain_rx_lane_map_physical{217.0}=0x1032
+
+#FC56 lane swap
+phy_chain_tx_lane_map_physical{225.0}=0x3120
+phy_chain_rx_lane_map_physical{225.0}=0x0321
+
+#FC57 lane swap
+phy_chain_tx_lane_map_physical{229.0}=0x3210
+phy_chain_rx_lane_map_physical{229.0}=0x2013
+
+#FC59 lane swap
+phy_chain_tx_lane_map_physical{237.0}=0x3210
+phy_chain_rx_lane_map_physical{237.0}=0x3210
+
+#FC58 lane swap
+phy_chain_tx_lane_map_physical{233.0}=0x3021
+phy_chain_rx_lane_map_physical{233.0}=0x0123
+
+#FC60 lane swap
+phy_chain_tx_lane_map_physical{241.0}=0x3012
+phy_chain_rx_lane_map_physical{241.0}=0x3201
+
+#FC61 lane swap
+phy_chain_tx_lane_map_physical{245.0}=0x1203
+phy_chain_rx_lane_map_physical{245.0}=0x0231
+
+#FC63 lane swap
+phy_chain_tx_lane_map_physical{253.0}=0x1230
+phy_chain_rx_lane_map_physical{253.0}=0x2031
+
+#FC62 lane swap
+phy_chain_tx_lane_map_physical{249.0}=0x0312
+phy_chain_rx_lane_map_physical{249.0}=0x2301
+
+#MC lane swap
+#phy_chain_tx_lane_map_physical{257.0}=0x3210
+#phy_chain_rx_lane_map_physical{257.0}=0x3210
+
+#FC0 P/N flip
+phy_chain_tx_polarity_flip_physical{1.0}=0x0
+phy_chain_rx_polarity_flip_physical{1.0}=0x1
+phy_chain_tx_polarity_flip_physical{2.0}=0x1
+phy_chain_rx_polarity_flip_physical{2.0}=0x1
+phy_chain_tx_polarity_flip_physical{3.0}=0x0
+phy_chain_rx_polarity_flip_physical{3.0}=0x0
+phy_chain_tx_polarity_flip_physical{4.0}=0x0
+phy_chain_rx_polarity_flip_physical{4.0}=0x0
+
+#FC1 P/N flip
+phy_chain_tx_polarity_flip_physical{5.0}=0x0
+phy_chain_rx_polarity_flip_physical{5.0}=0x0
+phy_chain_tx_polarity_flip_physical{6.0}=0x1
+phy_chain_rx_polarity_flip_physical{6.0}=0x0
+phy_chain_tx_polarity_flip_physical{7.0}=0x0
+phy_chain_rx_polarity_flip_physical{7.0}=0x0
+phy_chain_tx_polarity_flip_physical{8.0}=0x1
+phy_chain_rx_polarity_flip_physical{8.0}=0x0
+
+#FC3 P/N flip
+phy_chain_tx_polarity_flip_physical{13.0}=0x0
+phy_chain_rx_polarity_flip_physical{13.0}=0x0
+phy_chain_tx_polarity_flip_physical{14.0}=0x0
+phy_chain_rx_polarity_flip_physical{14.0}=0x0
+phy_chain_tx_polarity_flip_physical{15.0}=0x0
+phy_chain_rx_polarity_flip_physical{15.0}=0x1
+phy_chain_tx_polarity_flip_physical{16.0}=0x0
+phy_chain_rx_polarity_flip_physical{16.0}=0x1
+
+#FC2 P/N flip
+phy_chain_tx_polarity_flip_physical{9.0}=0x0
+phy_chain_rx_polarity_flip_physical{9.0}=0x1
+phy_chain_tx_polarity_flip_physical{10.0}=0x1
+phy_chain_rx_polarity_flip_physical{10.0}=0x0
+phy_chain_tx_polarity_flip_physical{11.0}=0x1
+phy_chain_rx_polarity_flip_physical{11.0}=0x0
+phy_chain_tx_polarity_flip_physical{12.0}=0x0
+phy_chain_rx_polarity_flip_physical{12.0}=0x0
+
+#FC4 P/N flip
+phy_chain_tx_polarity_flip_physical{17.0}=0x0
+phy_chain_rx_polarity_flip_physical{17.0}=0x0
+phy_chain_tx_polarity_flip_physical{18.0}=0x1
+phy_chain_rx_polarity_flip_physical{18.0}=0x0
+phy_chain_tx_polarity_flip_physical{19.0}=0x0
+phy_chain_rx_polarity_flip_physical{19.0}=0x0
+phy_chain_tx_polarity_flip_physical{20.0}=0x0
+phy_chain_rx_polarity_flip_physical{20.0}=0x0
+
+#FC5 P/N flip
+phy_chain_tx_polarity_flip_physical{21.0}=0x0
+phy_chain_rx_polarity_flip_physical{21.0}=0x1
+phy_chain_tx_polarity_flip_physical{22.0}=0x1
+phy_chain_rx_polarity_flip_physical{22.0}=0x1
+phy_chain_tx_polarity_flip_physical{23.0}=0x0
+phy_chain_rx_polarity_flip_physical{23.0}=0x1
+phy_chain_tx_polarity_flip_physical{24.0}=0x0
+phy_chain_rx_polarity_flip_physical{24.0}=0x0
+
+#FC7 P/N flip
+phy_chain_tx_polarity_flip_physical{29.0}=0x0
+phy_chain_rx_polarity_flip_physical{29.0}=0x1
+phy_chain_tx_polarity_flip_physical{30.0}=0x0
+phy_chain_rx_polarity_flip_physical{30.0}=0x1
+phy_chain_tx_polarity_flip_physical{31.0}=0x0
+phy_chain_rx_polarity_flip_physical{31.0}=0x1
+phy_chain_tx_polarity_flip_physical{32.0}=0x0
+phy_chain_rx_polarity_flip_physical{32.0}=0x1
+
+#FC6 P/N flip
+phy_chain_tx_polarity_flip_physical{25.0}=0x0
+phy_chain_rx_polarity_flip_physical{25.0}=0x0
+phy_chain_tx_polarity_flip_physical{26.0}=0x0
+phy_chain_rx_polarity_flip_physical{26.0}=0x0
+phy_chain_tx_polarity_flip_physical{27.0}=0x0
+phy_chain_rx_polarity_flip_physical{27.0}=0x0
+phy_chain_tx_polarity_flip_physical{28.0}=0x0
+phy_chain_rx_polarity_flip_physical{28.0}=0x0
+
+#FC8 P/N flip
+phy_chain_tx_polarity_flip_physical{33.0}=0x1
+phy_chain_rx_polarity_flip_physical{33.0}=0x0
+phy_chain_tx_polarity_flip_physical{34.0}=0x1
+phy_chain_rx_polarity_flip_physical{34.0}=0x1
+phy_chain_tx_polarity_flip_physical{35.0}=0x0
+phy_chain_rx_polarity_flip_physical{35.0}=0x1
+phy_chain_tx_polarity_flip_physical{36.0}=0x1
+phy_chain_rx_polarity_flip_physical{36.0}=0x1
+
+#FC9 P/N flip
+phy_chain_tx_polarity_flip_physical{37.0}=0x1
+phy_chain_rx_polarity_flip_physical{37.0}=0x0
+phy_chain_tx_polarity_flip_physical{38.0}=0x0
+phy_chain_rx_polarity_flip_physical{38.0}=0x1
+phy_chain_tx_polarity_flip_physical{39.0}=0x1
+phy_chain_rx_polarity_flip_physical{39.0}=0x0
+phy_chain_tx_polarity_flip_physical{40.0}=0x0
+phy_chain_rx_polarity_flip_physical{40.0}=0x0
+
+#FC11 P/N flip
+phy_chain_tx_polarity_flip_physical{45.0}=0x0
+phy_chain_rx_polarity_flip_physical{45.0}=0x0
+phy_chain_tx_polarity_flip_physical{46.0}=0x0
+phy_chain_rx_polarity_flip_physical{46.0}=0x1
+phy_chain_tx_polarity_flip_physical{47.0}=0x0
+phy_chain_rx_polarity_flip_physical{47.0}=0x0
+phy_chain_tx_polarity_flip_physical{48.0}=0x0
+phy_chain_rx_polarity_flip_physical{48.0}=0x1
+
+#FC10 P/N flip
+phy_chain_tx_polarity_flip_physical{41.0}=0x1
+phy_chain_rx_polarity_flip_physical{41.0}=0x0
+phy_chain_tx_polarity_flip_physical{42.0}=0x1
+phy_chain_rx_polarity_flip_physical{42.0}=0x0
+phy_chain_tx_polarity_flip_physical{43.0}=0x0
+phy_chain_rx_polarity_flip_physical{43.0}=0x0
+phy_chain_tx_polarity_flip_physical{44.0}=0x0
+phy_chain_rx_polarity_flip_physical{44.0}=0x1
+
+#FC12 P/N flip
+phy_chain_tx_polarity_flip_physical{49.0}=0x0
+phy_chain_rx_polarity_flip_physical{49.0}=0x0
+phy_chain_tx_polarity_flip_physical{50.0}=0x0
+phy_chain_rx_polarity_flip_physical{50.0}=0x1
+phy_chain_tx_polarity_flip_physical{51.0}=0x0
+phy_chain_rx_polarity_flip_physical{51.0}=0x1
+phy_chain_tx_polarity_flip_physical{52.0}=0x0
+phy_chain_rx_polarity_flip_physical{52.0}=0x1
+
+#FC13 P/N flip
+phy_chain_tx_polarity_flip_physical{53.0}=0x0
+phy_chain_rx_polarity_flip_physical{53.0}=0x0
+phy_chain_tx_polarity_flip_physical{54.0}=0x0
+phy_chain_rx_polarity_flip_physical{54.0}=0x0
+phy_chain_tx_polarity_flip_physical{55.0}=0x0
+phy_chain_rx_polarity_flip_physical{55.0}=0x0
+phy_chain_tx_polarity_flip_physical{56.0}=0x0
+phy_chain_rx_polarity_flip_physical{56.0}=0x0
+
+#FC15 P/N flip
+phy_chain_tx_polarity_flip_physical{61.0}=0x0
+phy_chain_rx_polarity_flip_physical{61.0}=0x0
+phy_chain_tx_polarity_flip_physical{62.0}=0x0
+phy_chain_rx_polarity_flip_physical{62.0}=0x1
+phy_chain_tx_polarity_flip_physical{63.0}=0x0
+phy_chain_rx_polarity_flip_physical{63.0}=0x1
+phy_chain_tx_polarity_flip_physical{64.0}=0x0
+phy_chain_rx_polarity_flip_physical{64.0}=0x1
+
+#FC14 P/N flip
+phy_chain_tx_polarity_flip_physical{57.0}=0x1
+phy_chain_rx_polarity_flip_physical{57.0}=0x0
+phy_chain_tx_polarity_flip_physical{58.0}=0x1
+phy_chain_rx_polarity_flip_physical{58.0}=0x0
+phy_chain_tx_polarity_flip_physical{59.0}=0x0
+phy_chain_rx_polarity_flip_physical{59.0}=0x0
+phy_chain_tx_polarity_flip_physical{60.0}=0x0
+phy_chain_rx_polarity_flip_physical{60.0}=0x1
+
+#FC16 P/N flip
+phy_chain_tx_polarity_flip_physical{65.0}=0x1
+phy_chain_rx_polarity_flip_physical{65.0}=0x0
+phy_chain_tx_polarity_flip_physical{66.0}=0x0
+phy_chain_rx_polarity_flip_physical{66.0}=0x1
+phy_chain_tx_polarity_flip_physical{67.0}=0x0
+phy_chain_rx_polarity_flip_physical{67.0}=0x1
+phy_chain_tx_polarity_flip_physical{68.0}=0x1
+phy_chain_rx_polarity_flip_physical{68.0}=0x1
+
+#FC17 P/N flip
+phy_chain_tx_polarity_flip_physical{69.0}=0x0
+phy_chain_rx_polarity_flip_physical{69.0}=0x0
+phy_chain_tx_polarity_flip_physical{70.0}=0x0
+phy_chain_rx_polarity_flip_physical{70.0}=0x0
+phy_chain_tx_polarity_flip_physical{71.0}=0x0
+phy_chain_rx_polarity_flip_physical{71.0}=0x0
+phy_chain_tx_polarity_flip_physical{72.0}=0x0
+phy_chain_rx_polarity_flip_physical{72.0}=0x0
+
+#FC19 P/N flip
+phy_chain_tx_polarity_flip_physical{77.0}=0x0
+phy_chain_rx_polarity_flip_physical{77.0}=0x0
+phy_chain_tx_polarity_flip_physical{78.0}=0x0
+phy_chain_rx_polarity_flip_physical{78.0}=0x1
+phy_chain_tx_polarity_flip_physical{79.0}=0x0
+phy_chain_rx_polarity_flip_physical{79.0}=0x0
+phy_chain_tx_polarity_flip_physical{80.0}=0x0
+phy_chain_rx_polarity_flip_physical{80.0}=0x1
+
+#FC18 P/N flip
+phy_chain_tx_polarity_flip_physical{73.0}=0x1
+phy_chain_rx_polarity_flip_physical{73.0}=0x0
+phy_chain_tx_polarity_flip_physical{74.0}=0x0
+phy_chain_rx_polarity_flip_physical{74.0}=0x1
+phy_chain_tx_polarity_flip_physical{75.0}=0x1
+phy_chain_rx_polarity_flip_physical{75.0}=0x0
+phy_chain_tx_polarity_flip_physical{76.0}=0x0
+phy_chain_rx_polarity_flip_physical{76.0}=0x1
+
+#FC20 P/N flip
+phy_chain_tx_polarity_flip_physical{81.0}=0x1
+phy_chain_rx_polarity_flip_physical{81.0}=0x0
+phy_chain_tx_polarity_flip_physical{82.0}=0x0
+phy_chain_rx_polarity_flip_physical{82.0}=0x1
+phy_chain_tx_polarity_flip_physical{83.0}=0x0
+phy_chain_rx_polarity_flip_physical{83.0}=0x1
+phy_chain_tx_polarity_flip_physical{84.0}=0x1
+phy_chain_rx_polarity_flip_physical{84.0}=0x1
+
+#FC21 P/N flip
+phy_chain_tx_polarity_flip_physical{85.0}=0x0
+phy_chain_rx_polarity_flip_physical{85.0}=0x0
+phy_chain_tx_polarity_flip_physical{86.0}=0x0
+phy_chain_rx_polarity_flip_physical{86.0}=0x0
+phy_chain_tx_polarity_flip_physical{87.0}=0x0
+phy_chain_rx_polarity_flip_physical{87.0}=0x0
+phy_chain_tx_polarity_flip_physical{88.0}=0x0
+phy_chain_rx_polarity_flip_physical{88.0}=0x0
+
+#FC23 P/N flip
+phy_chain_tx_polarity_flip_physical{93.0}=0x0
+phy_chain_rx_polarity_flip_physical{93.0}=0x0
+phy_chain_tx_polarity_flip_physical{94.0}=0x0
+phy_chain_rx_polarity_flip_physical{94.0}=0x1
+phy_chain_tx_polarity_flip_physical{95.0}=0x0
+phy_chain_rx_polarity_flip_physical{95.0}=0x0
+phy_chain_tx_polarity_flip_physical{96.0}=0x0
+phy_chain_rx_polarity_flip_physical{96.0}=0x1
+
+#FC22 P/N flip
+phy_chain_tx_polarity_flip_physical{89.0}=0x0
+phy_chain_rx_polarity_flip_physical{89.0}=0x0
+phy_chain_tx_polarity_flip_physical{90.0}=0x1
+phy_chain_rx_polarity_flip_physical{90.0}=0x0
+phy_chain_tx_polarity_flip_physical{91.0}=0x0
+phy_chain_rx_polarity_flip_physical{91.0}=0x0
+phy_chain_tx_polarity_flip_physical{92.0}=0x0
+phy_chain_rx_polarity_flip_physical{92.0}=0x1
+
+#FC24 P/N flip
+phy_chain_tx_polarity_flip_physical{97.0}=0x0
+phy_chain_rx_polarity_flip_physical{97.0}=0x0
+phy_chain_tx_polarity_flip_physical{98.0}=0x0
+phy_chain_rx_polarity_flip_physical{98.0}=0x1
+phy_chain_tx_polarity_flip_physical{99.0}=0x0
+phy_chain_rx_polarity_flip_physical{99.0}=0x0
+phy_chain_tx_polarity_flip_physical{100.0}=0x1
+phy_chain_rx_polarity_flip_physical{100.0}=0x1
+
+#FC25 P/N flip
+phy_chain_tx_polarity_flip_physical{101.0}=0x0
+phy_chain_rx_polarity_flip_physical{101.0}=0x0
+phy_chain_tx_polarity_flip_physical{102.0}=0x0
+phy_chain_rx_polarity_flip_physical{102.0}=0x0
+phy_chain_tx_polarity_flip_physical{103.0}=0x0
+phy_chain_rx_polarity_flip_physical{103.0}=0x0
+phy_chain_tx_polarity_flip_physical{104.0}=0x1
+phy_chain_rx_polarity_flip_physical{104.0}=0x0
+
+#FC27 P/N flip
+phy_chain_tx_polarity_flip_physical{109.0}=0x0
+phy_chain_rx_polarity_flip_physical{109.0}=0x0
+phy_chain_tx_polarity_flip_physical{110.0}=0x1
+phy_chain_rx_polarity_flip_physical{110.0}=0x1
+phy_chain_tx_polarity_flip_physical{111.0}=0x0
+phy_chain_rx_polarity_flip_physical{111.0}=0x0
+phy_chain_tx_polarity_flip_physical{112.0}=0x0
+phy_chain_rx_polarity_flip_physical{112.0}=0x0
+
+#FC26 P/N flip
+phy_chain_tx_polarity_flip_physical{105.0}=0x0
+phy_chain_rx_polarity_flip_physical{105.0}=0x0
+phy_chain_tx_polarity_flip_physical{106.0}=0x0
+phy_chain_rx_polarity_flip_physical{106.0}=0x1
+phy_chain_tx_polarity_flip_physical{107.0}=0x0
+phy_chain_rx_polarity_flip_physical{107.0}=0x1
+phy_chain_tx_polarity_flip_physical{108.0}=0x0
+phy_chain_rx_polarity_flip_physical{108.0}=0x0
+
+#FC28 P/N flip
+phy_chain_tx_polarity_flip_physical{113.0}=0x1
+phy_chain_rx_polarity_flip_physical{113.0}=0x0
+phy_chain_tx_polarity_flip_physical{114.0}=0x0
+phy_chain_rx_polarity_flip_physical{114.0}=0x1
+phy_chain_tx_polarity_flip_physical{115.0}=0x0
+phy_chain_rx_polarity_flip_physical{115.0}=0x1
+phy_chain_tx_polarity_flip_physical{116.0}=0x0
+phy_chain_rx_polarity_flip_physical{116.0}=0x1
+
+#FC29 P/N flip
+phy_chain_tx_polarity_flip_physical{117.0}=0x1
+phy_chain_rx_polarity_flip_physical{117.0}=0x1
+phy_chain_tx_polarity_flip_physical{118.0}=0x0
+phy_chain_rx_polarity_flip_physical{118.0}=0x0
+phy_chain_tx_polarity_flip_physical{119.0}=0x0
+phy_chain_rx_polarity_flip_physical{119.0}=0x0
+phy_chain_tx_polarity_flip_physical{120.0}=0x1
+phy_chain_rx_polarity_flip_physical{120.0}=0x1
+
+#FC31 P/N flip
+phy_chain_tx_polarity_flip_physical{125.0}=0x0
+phy_chain_rx_polarity_flip_physical{125.0}=0x0
+phy_chain_tx_polarity_flip_physical{126.0}=0x1
+phy_chain_rx_polarity_flip_physical{126.0}=0x0
+phy_chain_tx_polarity_flip_physical{127.0}=0x0
+phy_chain_rx_polarity_flip_physical{127.0}=0x0
+phy_chain_tx_polarity_flip_physical{128.0}=0x0
+phy_chain_rx_polarity_flip_physical{128.0}=0x0
+
+#FC30 P/N flip
+phy_chain_tx_polarity_flip_physical{121.0}=0x0
+phy_chain_rx_polarity_flip_physical{121.0}=0x1
+phy_chain_tx_polarity_flip_physical{122.0}=0x0
+phy_chain_rx_polarity_flip_physical{122.0}=0x0
+phy_chain_tx_polarity_flip_physical{123.0}=0x0
+phy_chain_rx_polarity_flip_physical{123.0}=0x0
+phy_chain_tx_polarity_flip_physical{124.0}=0x1
+phy_chain_rx_polarity_flip_physical{124.0}=0x0
+
+#FC32 P/N flip
+phy_chain_tx_polarity_flip_physical{129.0}=0x0
+phy_chain_rx_polarity_flip_physical{129.0}=0x1
+phy_chain_tx_polarity_flip_physical{130.0}=0x1
+phy_chain_rx_polarity_flip_physical{130.0}=0x0
+phy_chain_tx_polarity_flip_physical{131.0}=0x0
+phy_chain_rx_polarity_flip_physical{131.0}=0x0
+phy_chain_tx_polarity_flip_physical{132.0}=0x0
+phy_chain_rx_polarity_flip_physical{132.0}=0x0
+
+#FC33 P/N flip
+phy_chain_tx_polarity_flip_physical{133.0}=0x0
+phy_chain_rx_polarity_flip_physical{133.0}=0x0
+phy_chain_tx_polarity_flip_physical{134.0}=0x0
+phy_chain_rx_polarity_flip_physical{134.0}=0x1
+phy_chain_tx_polarity_flip_physical{135.0}=0x1
+phy_chain_rx_polarity_flip_physical{135.0}=0x1
+phy_chain_tx_polarity_flip_physical{136.0}=0x0
+phy_chain_rx_polarity_flip_physical{136.0}=0x0
+
+#FC35 P/N flip
+phy_chain_tx_polarity_flip_physical{141.0}=0x1
+phy_chain_rx_polarity_flip_physical{141.0}=0x1
+phy_chain_tx_polarity_flip_physical{142.0}=0x1
+phy_chain_rx_polarity_flip_physical{142.0}=0x1
+phy_chain_tx_polarity_flip_physical{143.0}=0x1
+phy_chain_rx_polarity_flip_physical{143.0}=0x1
+phy_chain_tx_polarity_flip_physical{144.0}=0x0
+phy_chain_rx_polarity_flip_physical{144.0}=0x1
+
+#FC34 P/N flip
+phy_chain_tx_polarity_flip_physical{137.0}=0x0
+phy_chain_rx_polarity_flip_physical{137.0}=0x0
+phy_chain_tx_polarity_flip_physical{138.0}=0x0
+phy_chain_rx_polarity_flip_physical{138.0}=0x1
+phy_chain_tx_polarity_flip_physical{139.0}=0x1
+phy_chain_rx_polarity_flip_physical{139.0}=0x1
+phy_chain_tx_polarity_flip_physical{140.0}=0x1
+phy_chain_rx_polarity_flip_physical{140.0}=0x1
+
+#FC36 P/N flip
+phy_chain_tx_polarity_flip_physical{145.0}=0x0
+phy_chain_rx_polarity_flip_physical{145.0}=0x0
+phy_chain_tx_polarity_flip_physical{146.0}=0x1
+phy_chain_rx_polarity_flip_physical{146.0}=0x1
+phy_chain_tx_polarity_flip_physical{147.0}=0x0
+phy_chain_rx_polarity_flip_physical{147.0}=0x1
+phy_chain_tx_polarity_flip_physical{148.0}=0x1
+phy_chain_rx_polarity_flip_physical{148.0}=0x0
+
+#FC37 P/N flip
+phy_chain_tx_polarity_flip_physical{149.0}=0x0
+phy_chain_rx_polarity_flip_physical{149.0}=0x0
+phy_chain_tx_polarity_flip_physical{150.0}=0x0
+phy_chain_rx_polarity_flip_physical{150.0}=0x0
+phy_chain_tx_polarity_flip_physical{151.0}=0x0
+phy_chain_rx_polarity_flip_physical{151.0}=0x0
+phy_chain_tx_polarity_flip_physical{152.0}=0x0
+phy_chain_rx_polarity_flip_physical{152.0}=0x0
+
+#FC39 P/N flip
+phy_chain_tx_polarity_flip_physical{157.0}=0x1
+phy_chain_rx_polarity_flip_physical{157.0}=0x1
+phy_chain_tx_polarity_flip_physical{158.0}=0x1
+phy_chain_rx_polarity_flip_physical{158.0}=0x0
+phy_chain_tx_polarity_flip_physical{159.0}=0x0
+phy_chain_rx_polarity_flip_physical{159.0}=0x0
+phy_chain_tx_polarity_flip_physical{160.0}=0x0
+phy_chain_rx_polarity_flip_physical{160.0}=0x1
+
+#FC38 P/N flip
+phy_chain_tx_polarity_flip_physical{153.0}=0x1
+phy_chain_rx_polarity_flip_physical{153.0}=0x0
+phy_chain_tx_polarity_flip_physical{154.0}=0x0
+phy_chain_rx_polarity_flip_physical{154.0}=0x0
+phy_chain_tx_polarity_flip_physical{155.0}=0x0
+phy_chain_rx_polarity_flip_physical{155.0}=0x0
+phy_chain_tx_polarity_flip_physical{156.0}=0x0
+phy_chain_rx_polarity_flip_physical{156.0}=0x0
+
+#FC40 P/N flip
+phy_chain_tx_polarity_flip_physical{161.0}=0x0
+phy_chain_rx_polarity_flip_physical{161.0}=0x0
+phy_chain_tx_polarity_flip_physical{162.0}=0x0
+phy_chain_rx_polarity_flip_physical{162.0}=0x0
+phy_chain_tx_polarity_flip_physical{163.0}=0x0
+phy_chain_rx_polarity_flip_physical{163.0}=0x0
+phy_chain_tx_polarity_flip_physical{164.0}=0x0
+phy_chain_rx_polarity_flip_physical{164.0}=0x1
+
+#FC41 P/N flip
+phy_chain_tx_polarity_flip_physical{165.0}=0x1
+phy_chain_rx_polarity_flip_physical{165.0}=0x0
+phy_chain_tx_polarity_flip_physical{166.0}=0x1
+phy_chain_rx_polarity_flip_physical{166.0}=0x1
+phy_chain_tx_polarity_flip_physical{167.0}=0x0
+phy_chain_rx_polarity_flip_physical{167.0}=0x1
+phy_chain_tx_polarity_flip_physical{168.0}=0x1
+phy_chain_rx_polarity_flip_physical{168.0}=0x0
+
+#FC43 P/N flip
+phy_chain_tx_polarity_flip_physical{173.0}=0x0
+phy_chain_rx_polarity_flip_physical{173.0}=0x0
+phy_chain_tx_polarity_flip_physical{174.0}=0x0
+phy_chain_rx_polarity_flip_physical{174.0}=0x0
+phy_chain_tx_polarity_flip_physical{175.0}=0x0
+phy_chain_rx_polarity_flip_physical{175.0}=0x0
+phy_chain_tx_polarity_flip_physical{176.0}=0x0
+phy_chain_rx_polarity_flip_physical{176.0}=0x0
+
+#FC42 P/N flip
+phy_chain_tx_polarity_flip_physical{169.0}=0x0
+phy_chain_rx_polarity_flip_physical{169.0}=0x1
+phy_chain_tx_polarity_flip_physical{170.0}=0x0
+phy_chain_rx_polarity_flip_physical{170.0}=0x1
+phy_chain_tx_polarity_flip_physical{171.0}=0x0
+phy_chain_rx_polarity_flip_physical{171.0}=0x1
+phy_chain_tx_polarity_flip_physical{172.0}=0x0
+phy_chain_rx_polarity_flip_physical{172.0}=0x0
+
+#FC44 P/N flip
+phy_chain_tx_polarity_flip_physical{177.0}=0x0
+phy_chain_rx_polarity_flip_physical{177.0}=0x0
+phy_chain_tx_polarity_flip_physical{178.0}=0x0
+phy_chain_rx_polarity_flip_physical{178.0}=0x0
+phy_chain_tx_polarity_flip_physical{179.0}=0x0
+phy_chain_rx_polarity_flip_physical{179.0}=0x0
+phy_chain_tx_polarity_flip_physical{180.0}=0x0
+phy_chain_rx_polarity_flip_physical{180.0}=0x1
+
+#FC45 P/N flip
+phy_chain_tx_polarity_flip_physical{181.0}=0x1
+phy_chain_rx_polarity_flip_physical{181.0}=0x0
+phy_chain_tx_polarity_flip_physical{182.0}=0x1
+phy_chain_rx_polarity_flip_physical{182.0}=0x1
+phy_chain_tx_polarity_flip_physical{183.0}=0x0
+phy_chain_rx_polarity_flip_physical{183.0}=0x1
+phy_chain_tx_polarity_flip_physical{184.0}=0x1
+phy_chain_rx_polarity_flip_physical{184.0}=0x0
+
+#FC47 P/N flip
+phy_chain_tx_polarity_flip_physical{189.0}=0x1
+phy_chain_rx_polarity_flip_physical{189.0}=0x1
+phy_chain_tx_polarity_flip_physical{190.0}=0x1
+phy_chain_rx_polarity_flip_physical{190.0}=0x1
+phy_chain_tx_polarity_flip_physical{191.0}=0x1
+phy_chain_rx_polarity_flip_physical{191.0}=0x1
+phy_chain_tx_polarity_flip_physical{192.0}=0x1
+phy_chain_rx_polarity_flip_physical{192.0}=0x1
+
+#FC46 P/N flip
+phy_chain_tx_polarity_flip_physical{185.0}=0x0
+phy_chain_rx_polarity_flip_physical{185.0}=0x0
+phy_chain_tx_polarity_flip_physical{186.0}=0x0
+phy_chain_rx_polarity_flip_physical{186.0}=0x1
+phy_chain_tx_polarity_flip_physical{187.0}=0x0
+phy_chain_rx_polarity_flip_physical{187.0}=0x0
+phy_chain_tx_polarity_flip_physical{188.0}=0x0
+phy_chain_rx_polarity_flip_physical{188.0}=0x0
+
+#FC48 P/N flip
+phy_chain_tx_polarity_flip_physical{193.0}=0x0
+phy_chain_rx_polarity_flip_physical{193.0}=0x0
+phy_chain_tx_polarity_flip_physical{194.0}=0x0
+phy_chain_rx_polarity_flip_physical{194.0}=0x0
+phy_chain_tx_polarity_flip_physical{195.0}=0x0
+phy_chain_rx_polarity_flip_physical{195.0}=0x0
+phy_chain_tx_polarity_flip_physical{196.0}=0x0
+phy_chain_rx_polarity_flip_physical{196.0}=0x1
+
+#FC49 P/N flip
+phy_chain_tx_polarity_flip_physical{197.0}=0x1
+phy_chain_rx_polarity_flip_physical{197.0}=0x0
+phy_chain_tx_polarity_flip_physical{198.0}=0x1
+phy_chain_rx_polarity_flip_physical{198.0}=0x1
+phy_chain_tx_polarity_flip_physical{199.0}=0x0
+phy_chain_rx_polarity_flip_physical{199.0}=0x1
+phy_chain_tx_polarity_flip_physical{200.0}=0x1
+phy_chain_rx_polarity_flip_physical{200.0}=0x0
+
+#FC51 P/N flip
+phy_chain_tx_polarity_flip_physical{205.0}=0x1
+phy_chain_rx_polarity_flip_physical{205.0}=0x1
+phy_chain_tx_polarity_flip_physical{206.0}=0x1
+phy_chain_rx_polarity_flip_physical{206.0}=0x1
+phy_chain_tx_polarity_flip_physical{207.0}=0x1
+phy_chain_rx_polarity_flip_physical{207.0}=0x1
+phy_chain_tx_polarity_flip_physical{208.0}=0x1
+phy_chain_rx_polarity_flip_physical{208.0}=0x1
+
+#FC50 P/N flip
+phy_chain_tx_polarity_flip_physical{201.0}=0x0
+phy_chain_rx_polarity_flip_physical{201.0}=0x0
+phy_chain_tx_polarity_flip_physical{202.0}=0x0
+phy_chain_rx_polarity_flip_physical{202.0}=0x1
+phy_chain_tx_polarity_flip_physical{203.0}=0x0
+phy_chain_rx_polarity_flip_physical{203.0}=0x0
+phy_chain_tx_polarity_flip_physical{204.0}=0x0
+phy_chain_rx_polarity_flip_physical{204.0}=0x0
+
+#FC52 P/N flip
+phy_chain_tx_polarity_flip_physical{209.0}=0x0
+phy_chain_rx_polarity_flip_physical{209.0}=0x0
+phy_chain_tx_polarity_flip_physical{210.0}=0x0
+phy_chain_rx_polarity_flip_physical{210.0}=0x0
+phy_chain_tx_polarity_flip_physical{211.0}=0x0
+phy_chain_rx_polarity_flip_physical{211.0}=0x0
+phy_chain_tx_polarity_flip_physical{212.0}=0x0
+phy_chain_rx_polarity_flip_physical{212.0}=0x1
+
+#FC53 P/N flip
+phy_chain_tx_polarity_flip_physical{213.0}=0x1
+phy_chain_rx_polarity_flip_physical{213.0}=0x0
+phy_chain_tx_polarity_flip_physical{214.0}=0x1
+phy_chain_rx_polarity_flip_physical{214.0}=0x1
+phy_chain_tx_polarity_flip_physical{215.0}=0x0
+phy_chain_rx_polarity_flip_physical{215.0}=0x1
+phy_chain_tx_polarity_flip_physical{216.0}=0x1
+phy_chain_rx_polarity_flip_physical{216.0}=0x0
+
+#FC55 P/N flip
+phy_chain_tx_polarity_flip_physical{221.0}=0x0
+phy_chain_rx_polarity_flip_physical{221.0}=0x1
+phy_chain_tx_polarity_flip_physical{222.0}=0x1
+phy_chain_rx_polarity_flip_physical{222.0}=0x1
+phy_chain_tx_polarity_flip_physical{223.0}=0x1
+phy_chain_rx_polarity_flip_physical{223.0}=0x1
+phy_chain_tx_polarity_flip_physical{224.0}=0x0
+phy_chain_rx_polarity_flip_physical{224.0}=0x1
+
+#FC54 P/N flip
+phy_chain_tx_polarity_flip_physical{217.0}=0x0
+phy_chain_rx_polarity_flip_physical{217.0}=0x0
+phy_chain_tx_polarity_flip_physical{218.0}=0x0
+phy_chain_rx_polarity_flip_physical{218.0}=0x1
+phy_chain_tx_polarity_flip_physical{219.0}=0x0
+phy_chain_rx_polarity_flip_physical{219.0}=0x0
+phy_chain_tx_polarity_flip_physical{220.0}=0x0
+phy_chain_rx_polarity_flip_physical{220.0}=0x0
+
+#FC56 P/N flip
+phy_chain_tx_polarity_flip_physical{225.0}=0x1
+phy_chain_rx_polarity_flip_physical{225.0}=0x0
+phy_chain_tx_polarity_flip_physical{226.0}=0x0
+phy_chain_rx_polarity_flip_physical{226.0}=0x0
+phy_chain_tx_polarity_flip_physical{227.0}=0x0
+phy_chain_rx_polarity_flip_physical{227.0}=0x0
+phy_chain_tx_polarity_flip_physical{228.0}=0x0
+phy_chain_rx_polarity_flip_physical{228.0}=0x1
+
+#FC57 P/N flip
+phy_chain_tx_polarity_flip_physical{229.0}=0x0
+phy_chain_rx_polarity_flip_physical{229.0}=0x1
+phy_chain_tx_polarity_flip_physical{230.0}=0x0
+phy_chain_rx_polarity_flip_physical{230.0}=0x0
+phy_chain_tx_polarity_flip_physical{231.0}=0x0
+phy_chain_rx_polarity_flip_physical{231.0}=0x0
+phy_chain_tx_polarity_flip_physical{232.0}=0x0
+phy_chain_rx_polarity_flip_physical{232.0}=0x1
+
+#FC59 P/N flip
+phy_chain_tx_polarity_flip_physical{237.0}=0x0
+phy_chain_rx_polarity_flip_physical{237.0}=0x1
+phy_chain_tx_polarity_flip_physical{238.0}=0x1
+phy_chain_rx_polarity_flip_physical{238.0}=0x1
+phy_chain_tx_polarity_flip_physical{239.0}=0x0
+phy_chain_rx_polarity_flip_physical{239.0}=0x1
+phy_chain_tx_polarity_flip_physical{240.0}=0x0
+phy_chain_rx_polarity_flip_physical{240.0}=0x1
+
+#FC58 P/N flip
+phy_chain_tx_polarity_flip_physical{233.0}=0x0
+phy_chain_rx_polarity_flip_physical{233.0}=0x0
+phy_chain_tx_polarity_flip_physical{234.0}=0x1
+phy_chain_rx_polarity_flip_physical{234.0}=0x1
+phy_chain_tx_polarity_flip_physical{235.0}=0x1
+phy_chain_rx_polarity_flip_physical{235.0}=0x1
+phy_chain_tx_polarity_flip_physical{236.0}=0x0
+phy_chain_rx_polarity_flip_physical{236.0}=0x1
+
+#FC60 P/N flip
+phy_chain_tx_polarity_flip_physical{241.0}=0x1
+phy_chain_rx_polarity_flip_physical{241.0}=0x0
+phy_chain_tx_polarity_flip_physical{242.0}=0x1
+phy_chain_rx_polarity_flip_physical{242.0}=0x0
+phy_chain_tx_polarity_flip_physical{243.0}=0x0
+phy_chain_rx_polarity_flip_physical{243.0}=0x1
+phy_chain_tx_polarity_flip_physical{244.0}=0x0
+phy_chain_rx_polarity_flip_physical{244.0}=0x0
+
+#FC61 P/N flip
+phy_chain_tx_polarity_flip_physical{245.0}=0x0
+phy_chain_rx_polarity_flip_physical{245.0}=0x0
+phy_chain_tx_polarity_flip_physical{246.0}=0x1
+phy_chain_rx_polarity_flip_physical{246.0}=0x1
+phy_chain_tx_polarity_flip_physical{247.0}=0x0
+phy_chain_rx_polarity_flip_physical{247.0}=0x1
+phy_chain_tx_polarity_flip_physical{248.0}=0x0
+phy_chain_rx_polarity_flip_physical{248.0}=0x1
+
+#FC63 P/N flip
+phy_chain_tx_polarity_flip_physical{253.0}=0x0
+phy_chain_rx_polarity_flip_physical{253.0}=0x1
+phy_chain_tx_polarity_flip_physical{254.0}=0x0
+phy_chain_rx_polarity_flip_physical{254.0}=0x0
+phy_chain_tx_polarity_flip_physical{255.0}=0x0
+phy_chain_rx_polarity_flip_physical{255.0}=0x0
+phy_chain_tx_polarity_flip_physical{256.0}=0x0
+phy_chain_rx_polarity_flip_physical{256.0}=0x1
+
+#FC62 P/N flip
+phy_chain_tx_polarity_flip_physical{249.0}=0x1
+phy_chain_rx_polarity_flip_physical{249.0}=0x1
+phy_chain_tx_polarity_flip_physical{250.0}=0x0
+phy_chain_rx_polarity_flip_physical{250.0}=0x1
+phy_chain_tx_polarity_flip_physical{251.0}=0x0
+phy_chain_rx_polarity_flip_physical{251.0}=0x1
+phy_chain_tx_polarity_flip_physical{252.0}=0x0
+phy_chain_rx_polarity_flip_physical{252.0}=0x1
+
+#FC62 P/N flip
+#phy_chain_tx_polarity_flip_physical{257.0}=0x0
+#phy_chain_rx_polarity_flip_physical{257.0}=0x0
+#phy_chain_tx_polarity_flip_physical{258.0}=0x0
+#phy_chain_rx_polarity_flip_physical{258.0}=0x0
+#phy_chain_tx_polarity_flip_physical{259.0}=0x0
+#phy_chain_rx_polarity_flip_physical{259.0}=0x0
+#phy_chain_tx_polarity_flip_physical{260.0}=0x0
+#phy_chain_rx_polarity_flip_physical{260.0}=0x0
+
+#dport_map_port_1=1
+#dport_map_port_5=2
+#dport_map_port_13=3
+#dport_map_port_9=4
+#dport_map_port_17=5
+#dport_map_port_21=6
+#dport_map_port_29=7
+#dport_map_port_25=8
+#dport_map_port_33=9
+#dport_map_port_37=10
+#dport_map_port_45=11
+#dport_map_port_41=12
+#dport_map_port_49=13
+#dport_map_port_53=14
+#dport_map_port_61=15
+#dport_map_port_57=16
+#dport_map_port_65=17
+#dport_map_port_69=18
+#dport_map_port_77=19
+#dport_map_port_73=20
+#dport_map_port_81=21
+#dport_map_port_85=22
+#dport_map_port_93=23
+#dport_map_port_89=24
+#dport_map_port_97=25
+#dport_map_port_101=26
+#dport_map_port_109=27
+#dport_map_port_105=28
+#dport_map_port_113=29
+#dport_map_port_117=30
+#dport_map_port_125=31
+#dport_map_port_121=32
+#dport_map_port_129=33
+#dport_map_port_133=34
+#dport_map_port_141=35
+#dport_map_port_137=36
+#dport_map_port_145=37
+#dport_map_port_149=38
+#dport_map_port_157=39
+#dport_map_port_153=40
+#dport_map_port_161=41
+#dport_map_port_165=42
+#dport_map_port_173=43
+#dport_map_port_169=44
+#dport_map_port_177=45
+#dport_map_port_181=46
+#dport_map_port_189=47
+#dport_map_port_185=48
+#dport_map_port_193=49
+#dport_map_port_197=50
+#dport_map_port_205=51
+#dport_map_port_201=52
+#dport_map_port_209=53
+#dport_map_port_213=54
+#dport_map_port_221=55
+#dport_map_port_217=56
+#dport_map_port_225=57
+#dport_map_port_229=58
+#dport_map_port_237=59
+#dport_map_port_233=60
+#dport_map_port_241=61
+#dport_map_port_245=62
+#dport_map_port_253=63
+#dport_map_port_249=64
+
+scache_filename=/tmp/scache
+schan_intr_enable=0
+stable_size=0x5500000
+tdma_timeout_usec=3000000
