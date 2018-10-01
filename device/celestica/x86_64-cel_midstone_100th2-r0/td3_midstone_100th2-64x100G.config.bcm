@@ -10,8 +10,8 @@ miim_intr_enable=0
 module_64ports=1
 oversubscribe_mode=1
 parity_enable=0
-pbmp_xport_xe=0x3fffc0000ffff00003fffc0001fffe
-
+#pbmp_xport_xe=0x3fffc0000ffff00003fffc0001fffe
+pbmp_xport_xe=0x3fffd0000ffff40003fffc0001fffe
 
 ptp_ts_pll_fref=50000000
 ptp_bs_fref_0=50000000
@@ -82,8 +82,8 @@ portmap_115.0=245:100
 portmap_116.0=253:100
 portmap_117.0=249:100
 
-#portmap_66.0=257:10
-#portmap_100.0=259:10
+portmap_66.0=257:10
+portmap_100.0=259:10
 
 #FC0 lane swap
 phy_chain_tx_lane_map_physical{1.0}=0x3210
@@ -342,8 +342,8 @@ phy_chain_tx_lane_map_physical{249.0}=0x0312
 phy_chain_rx_lane_map_physical{249.0}=0x2301
 
 #MC lane swap
-#phy_chain_tx_lane_map_physical{257.0}=0x3210
-#phy_chain_rx_lane_map_physical{257.0}=0x3210
+phy_chain_tx_lane_map_physical{257.0}=0x3210
+phy_chain_rx_lane_map_physical{257.0}=0x3210
 
 #FC0 P/N flip
 phy_chain_tx_polarity_flip_physical{1.0}=0x0
@@ -986,14 +986,14 @@ phy_chain_tx_polarity_flip_physical{252.0}=0x0
 phy_chain_rx_polarity_flip_physical{252.0}=0x1
 
 #FC62 P/N flip
-#phy_chain_tx_polarity_flip_physical{257.0}=0x0
-#phy_chain_rx_polarity_flip_physical{257.0}=0x0
-#phy_chain_tx_polarity_flip_physical{258.0}=0x0
-#phy_chain_rx_polarity_flip_physical{258.0}=0x0
-#phy_chain_tx_polarity_flip_physical{259.0}=0x0
-#phy_chain_rx_polarity_flip_physical{259.0}=0x0
-#phy_chain_tx_polarity_flip_physical{260.0}=0x0
-#phy_chain_rx_polarity_flip_physical{260.0}=0x0
+phy_chain_tx_polarity_flip_physical{257.0}=0x0
+phy_chain_rx_polarity_flip_physical{257.0}=0x0
+phy_chain_tx_polarity_flip_physical{258.0}=0x0
+phy_chain_rx_polarity_flip_physical{258.0}=0x0
+phy_chain_tx_polarity_flip_physical{259.0}=0x0
+phy_chain_rx_polarity_flip_physical{259.0}=0x0
+phy_chain_tx_polarity_flip_physical{260.0}=0x0
+phy_chain_rx_polarity_flip_physical{260.0}=0x0
 
 #dport_map_port_1=1
 #dport_map_port_5=2
