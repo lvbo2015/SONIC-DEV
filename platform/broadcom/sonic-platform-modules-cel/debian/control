@@ -15,3 +15,18 @@ Package: platform-modules-haliburton
 Architecture: amd64
 Depends: linux-image-4.9.0-8-amd64
 Description: kernel modules for platform devices such as fan, led, sfp
+
+Package: platform-modules-phalanx
+Architecture: amd64
+Depends: linux-image-4.9.0-8-amd64
+Description: kernel modules for platform devices such as fan, led, sfp
+
+Package: platform-modules-fishbone48
+Architecture: amd64
+Depends: linux-image-4.9.0-8-amd64
+Description: kernel modules for platform devices such as fan, led, sfp
+
+Package: platform-modules-fishbone32
+Architecture: amd64
+Depends: linux-image-4.9.0-8-amd64
+Description: kernel modules for platform devices such as fan, led, sfp

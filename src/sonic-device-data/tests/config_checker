@@ -13,6 +13,10 @@ def check_property(p):
 
     if p in permitted_properties:
         return True
+
+    if re.sub(r"{[0-9]+}", "", p) in permitted_properties:
+        return True
+
     return False
 
 def check_file(file_name):
@@ -45,6 +49,7 @@ def check_file(file_name):
                 p = re.sub(r"_lane\d+$", '', p)
                 # Remove trailing "{<number>.<number>}$"
                 p = re.sub(r"{[0-9]+\.[0-9]+}$", '', p)
+
 
                 if not check_property(p):
                     file_ok = False
