@@ -21,6 +21,7 @@ start)
         modprobe i2c-dev
         modprobe baseboard_cpld
         modprobe switchboard_fpga
+        modprobe mc24lt64t
         
         # Add driver to support TLV - EEPROM
         echo 24lc64t 0x56 > /sys/bus/i2c/devices/i2c-0/new_device
