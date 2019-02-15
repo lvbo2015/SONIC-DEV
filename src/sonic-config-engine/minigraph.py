@@ -530,12 +530,22 @@ def parse_xml(filename, platform=None, port_config_file=None):
         if port.get('speed') == '100000':
             port['fec'] = 'rs'
 
+    # set port description if parsed from deviceinfo
     for port_name in port_descriptions:
         # ignore port not in port_config.ini
         if not ports.has_key(port_name):
             continue
 
         ports.setdefault(port_name, {})['description'] = port_descriptions[port_name]
+
+    for port_name, port in ports.items():
+        if not port.get('description'):
+            if neighbors.has_key(port_name):
+                # for the ports w/o description set it to neighbor name:port
+                port['description'] = "%s:%s" % (neighbors[port_name]['name'], neighbors[port_name]['port'])
+            else:
+                # for the ports w/o neighbor info, set it to port alias
+                port['description'] = port.get('alias', port_name)
 
     # set default port MTU as 9100
     for port in ports.itervalues():
