@@ -232,19 +232,6 @@ RUN apt-get update && apt-get install -y \
         texi2html \
 # For initramfs
         bash-completion \
-# For Mellanox CRIU build
-        libprotobuf-dev \
-        libprotobuf-c0-dev \
-        protobuf-c-compiler \
-        protobuf-compiler \
-        python-protobuf \
-        pkg-config \
-        libnet1-dev \
-        libnet-dev \
-        libaio-dev \
-        asciidoc \
-        xmlto \
-        checkinstall \
 # For sonic vs image build
         dosfstools \
         qemu-kvm \
@@ -278,7 +265,7 @@ RUN pip install --force-reinstall --upgrade jinja2>=2.10
 RUN pip install j2cli
 
 # For sonic utilities testing
-RUN pip install click-default-group click natsort tabulate netifaces==0.10.7
+RUN pip install click-default-group click natsort tabulate netifaces==0.10.7 fastentrypoints
 
 # For supervisor build
 RUN pip install meld3 mock
