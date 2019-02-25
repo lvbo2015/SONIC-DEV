@@ -12,6 +12,7 @@ port_fec=3
 serdes_tx_taps_ce=pam4:0:140:0:0:0:0
 
 init_all_modules=0
+mdio_output_delay=64
 
 #BC1
 portmap_5=9:100:2
