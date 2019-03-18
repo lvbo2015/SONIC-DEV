@@ -1,5 +1,5 @@
 # Download LED code into LED processor and enable (if applicable).
-
+echo "Download LED code into LED processor and enable"
 led 0 load /usr/share/sonic/platform/ledcode;
 led 0 auto on; led 0 start;
 led 1 load /usr/share/sonic/platform/ledcode;
@@ -8,3 +8,7 @@ led 2 load /usr/share/sonic/platform/ledcode;
 led 2 auto on; led 2 start;
 led 3 load /usr/share/sonic/platform/ledcode;
 led 3 auto on; led 3 start
+
+#Enable all ports
+echo "Enable all ports"
+port all en=1
