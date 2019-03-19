@@ -224,23 +224,25 @@ if [ -f $FIRST_BOOT_FILE ]; then
 
     # Try to take old configuration saved during installation
     # and create a flag in /tmp/ to let updategraph service know
-    if [ -d /host/old_config ]; then
-        mv -f /host/old_config /etc/sonic/
-        touch /tmp/pending_config_migration
-    elif [ -f /host/minigraph.xml ]; then
-        mkdir -p /etc/sonic/old_config
-        mv /host/minigraph.xml /etc/sonic/old_config/
-        touch /tmp/pending_config_migration
-    elif [ -n "$migration" ] && [ -f /host/migration/minigraph.xml ];  then
-        mkdir -p /etc/sonic/old_config
-        mv /host/migration/minigraph.xml /etc/sonic/old_config/
-        [ -f /host/migration/acl.json ] && mv /host/migration/acl.json /etc/sonic/old_config/
-        [ -f /host/migration/snmp.yml ] && mv /host/migration/snmp.yml /etc/sonic/old_config/
-        touch /tmp/pending_config_migration
-        [ -f /etc/sonic/updategraph.conf ] && sed -i -e "s/enabled=false/enabled=true/g" /etc/sonic/updategraph.conf
-    else
-        touch /tmp/pending_config_initialization
-    fi
+    #if [ -d /host/old_config ]; then
+    #    mv -f /host/old_config /etc/sonic/
+    #    touch /tmp/pending_config_migration
+    #elif [ -f /host/minigraph.xml ]; then
+    #    mkdir -p /etc/sonic/old_config
+    #    mv /host/minigraph.xml /etc/sonic/old_config/
+    #    touch /tmp/pending_config_migration
+    #elif [ -n "$migration" ] && [ -f /host/migration/minigraph.xml ];  then
+    #    mkdir -p /etc/sonic/old_config
+    #    mv /host/migration/minigraph.xml /etc/sonic/old_config/
+    #    [ -f /host/migration/acl.json ] && mv /host/migration/acl.json /etc/sonic/old_config/
+    #    [ -f /host/migration/snmp.yml ] && mv /host/migration/snmp.yml /etc/sonic/old_config/
+    #    touch /tmp/pending_config_migration
+    #    [ -f /etc/sonic/updategraph.conf ] && sed -i -e "s/enabled=false/enabled=true/g" /etc/sonic/updategraph.conf
+    #else
+    #    touch /tmp/pending_config_initialization
+    #fi
+    echo "touch /tmp/pending_config_initialization"
+    touch /tmp/pending_config_initialization
 
     if [ -d /host/image-$SONIC_VERSION/platform/$platform ]; then
         dpkg -i /host/image-$SONIC_VERSION/platform/$platform/*.deb
