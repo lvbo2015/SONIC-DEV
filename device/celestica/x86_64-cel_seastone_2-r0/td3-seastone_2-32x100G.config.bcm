@@ -1,7 +1,6 @@
 ptp_ts_pll_fref=50000000
 ptp_bs_fref_0=50000000
 ptp_bs_fref_1=50000000
-cls_cmd_daemon=0
 
 portmap_1.0=1:100
 portmap_5.0=5:100
