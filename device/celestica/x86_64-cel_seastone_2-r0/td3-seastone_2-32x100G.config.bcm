@@ -1,3 +1,25 @@
+help_cli_enable=1
+ifp_inports_support_enable=1
+ipv6_lpm_128b_enable=0x1
+l2_mem_entries=32768
+l2xmsg_mode=1
+l3_max_ecmp_mode=1
+l3_mem_entries=16384
+lpm_scaling_enable=1
+max_vp_lags=0
+mem_cache_enable=0
+memlist_enable=1
+miim_intr_enable=0
+module_64ports=1
+oversubscribe_mode=1
+parity_enable=0
+serdes_lane_config_dfe=on
+#serdes_fec_enable=1
+serdes_if_type_ce=14
+pbmp_gport_stack.0=0x0000000000000000000000000000000000000000000000000000000000000000
+#pbmp_xport_xe=0x48878787f8787808dfe1e0203e1e1e022
+pbmp_xport_xe=0x88888888888888882222222222222222
+
 ptp_ts_pll_fref=50000000
 ptp_bs_fref_0=50000000
 ptp_bs_fref_1=50000000
@@ -167,7 +189,7 @@ phy_chain_rx_lane_map_physical{125.0}=0x3210
 
 #MC lane swap
 phy_chain_tx_lane_map_physical{129.0}=0x3210
-phy_chain_rx_lane_map_physical{129.0}=0x0231
+phy_chain_rx_lane_map_physical{129.0}=0x3210
 
 
 #wc0 P/N flip
@@ -491,15 +513,14 @@ phy_chain_tx_polarity_flip_physical{128.0}=0x0
 phy_chain_rx_polarity_flip_physical{128.0}=0x0
 
 #MC P/N flip
-phy_chain_tx_polarity_flip_physical{129.0}=0x1
+phy_chain_tx_polarity_flip_physical{129.0}=0x0
 phy_chain_rx_polarity_flip_physical{129.0}=0x0
 phy_chain_tx_polarity_flip_physical{130.0}=0x0
 phy_chain_rx_polarity_flip_physical{130.0}=0x0
-phy_chain_tx_polarity_flip_physical{131.0}=0x1
-phy_chain_rx_polarity_flip_physical{131.0}=0x1
+phy_chain_tx_polarity_flip_physical{131.0}=0x0
+phy_chain_rx_polarity_flip_physical{131.0}=0x0
 phy_chain_tx_polarity_flip_physical{132.0}=0x0
-phy_chain_rx_polarity_flip_physical{132.0}=0x1
-
+phy_chain_rx_polarity_flip_physical{132.0}=0x0
 
 dport_map_port_1=1
 dport_map_port_5=2
@@ -535,3 +556,43 @@ dport_map_port_123=31
 dport_map_port_127=32
 dport_map_port_66=33
 dport_map_port_130=34
+
+# configuration for 100G optical module
+serdes_preemphasis_1=0x164608
+serdes_preemphasis_5=0x164608
+serdes_preemphasis_9=0x164608
+serdes_preemphasis_13=0x134908
+serdes_preemphasis_17=0x134908
+serdes_preemphasis_21=0x134908
+serdes_preemphasis_25=0x124a08
+serdes_preemphasis_29=0x124a08
+serdes_preemphasis_33=0x114b08
+serdes_preemphasis_37=0x114b08
+serdes_preemphasis_41=0x0f4d08
+serdes_preemphasis_45=0x0f4d08
+serdes_preemphasis_49=0x0d4f08
+serdes_preemphasis_53=0x0d4f08
+serdes_preemphasis_57=0x0d4f08
+serdes_preemphasis_61=0x0d4f08
+serdes_preemphasis_67=0x0d4f08
+serdes_preemphasis_71=0x0d4f08
+serdes_preemphasis_75=0x0d4f08
+serdes_preemphasis_79=0x0d4f08
+serdes_preemphasis_83=0x0d4f08
+serdes_preemphasis_87=0x0f4d08
+serdes_preemphasis_91=0x0f4d08
+serdes_preemphasis_95=0x0f4d08
+serdes_preemphasis_99=0x114b08
+serdes_preemphasis_103=0x114b08
+serdes_preemphasis_107=0x114b08
+serdes_preemphasis_111=0x124a08
+serdes_preemphasis_115=0x134908
+serdes_preemphasis_119=0x134908
+serdes_preemphasis_123=0x134908
+serdes_preemphasis_127=0x164608
+
+reglist_enable=1
+scache_filename=/tmp/scache
+schan_intr_enable=0
+stable_size=0x5500000
+tdma_timeout_usec=3000000
