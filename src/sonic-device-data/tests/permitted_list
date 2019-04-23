@@ -140,3 +140,11 @@ xgxs_lcpll_xtal_refclk
 xgxs_pdetect
 xgxs_rx_lane_map
 xgxs_tx_lane_map
+help_cli_enable
+ifp_inports_support_enable
+memlist_enable
+serdes_lane_config_dfe
+serdes_fec_enable
+pbmp_gport_stack
+reglist_enable
+scache_filename
