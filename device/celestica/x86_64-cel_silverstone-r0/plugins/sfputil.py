@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Platform-specific SFP transceiver interface for SONiC
-# This plugins only support QSFP and SFP.
+# This plugin supports QSFP-DD, QSFP and SFP.
 
 try:
     import time
@@ -15,8 +15,8 @@ class SfpUtil(SfpUtilBase):
 
     PORT_START = 1
     PORT_END = 34
-    QSFP_PORT_START = 1
-    QSFP_PORT_END = 32
+    OSFP_PORT_START = 1
+    OSFP_PORT_END = 32
     SFP_PORT_START = 33
     SFP_PORT_END = 34
 
@@ -37,7 +37,11 @@ class SfpUtil(SfpUtilBase):
 
     @property
     def qsfp_ports(self):
-        return range(self.QSFP_PORT_START, self.QSFP_PORT_END + 1)
+        return []
+
+    @property
+    def osfp_ports(self):
+        return range(self.OSFP_PORT_START, self.OSFP_PORT_END + 1)
 
     @property
     def port_to_eeprom_mapping(self):
@@ -48,14 +52,14 @@ class SfpUtil(SfpUtilBase):
         return self._port_to_i2cbus_mapping
 
     def get_port_name(self, port_num):
-        if port_num in self.qsfp_ports:
-            self._port_name = "QSFP" + str(port_num - self.QSFP_PORT_START + 1)
+        if port_num in self.osfp_ports:
+            self._port_name = "QSFP" + str(port_num - self.OSFP_PORT_START + 1)
         else:
             self._port_name = "SFP" + str(port_num - self.SFP_PORT_START + 1)
         return self._port_name
 
     def get_eeprom_dom_raw(self, port_num):
-        if port_num in self.qsfp_ports:
+        if port_num in self.osfp_ports:
             # QSFP DOM EEPROM is also at addr 0x50 and thus also stored in eeprom_ifraw
             return None
         else:
@@ -79,7 +83,7 @@ class SfpUtil(SfpUtilBase):
 
         # Get path for access port presence status
         port_name = self.get_port_name(port_num)
-        sysfs_filename = "qsfp_modprs" if port_num in self.qsfp_ports else "sfp_modabs"
+        sysfs_filename = "qsfp_modprs" if port_num in self.osfp_ports else "sfp_modabs"
         reg_path = "/".join([self.PORT_INFO_PATH, port_name, sysfs_filename])
 
         # Read status
@@ -99,7 +103,7 @@ class SfpUtil(SfpUtilBase):
 
     def get_low_power_mode(self, port_num):
         # Check for invalid QSFP port_num
-        if port_num not in self.qsfp_ports:
+        if port_num not in self.osfp_ports:
             return False
 
         try:
@@ -121,7 +125,7 @@ class SfpUtil(SfpUtilBase):
 
     def set_low_power_mode(self, port_num, lpmode):
         # Check for invalid QSFP port_num
-        if port_num not in self.qsfp_ports:
+        if port_num not in self.osfp_ports:
             return False
 
         try:
@@ -142,7 +146,7 @@ class SfpUtil(SfpUtilBase):
 
     def reset(self, port_num):
         # Check for invalid QSFP port_num
-        if port_num not in self.qsfp_ports:
+        if port_num not in self.osfp_ports:
             return False
 
         try:
