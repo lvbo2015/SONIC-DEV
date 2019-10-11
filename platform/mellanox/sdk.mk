@@ -1,5 +1,5 @@
-MLNX_SDK_BASE_URL = https://github.com/Mellanox/SAI-Implementation/raw/acf8ed31fd43e8280b553357c4ac4248f2c2e3aa/sdk
-MLNX_SDK_VERSION = 4.3.1886
+MLNX_SDK_BASE_PATH = $(PLATFORM_PATH)/sdk-src/sx-kernel/Switch-SDK-drivers/bin/
+MLNX_SDK_VERSION = 4.3.2104
 MLNX_SDK_ISSU_VERSION = 101
 
 MLNX_SDK_DEB_VERSION = $(subst _,.,$(MLNX_SDK_VERSION))
@@ -15,17 +15,17 @@ endif
 
 export MLNX_SDK_SOURCE_BASE_URL MLNX_SDK_VERSION MLNX_SDK_ISSU_VERSION MLNX_SDK_DEB_VERSION
 
-MLNX_SDK_RDEBS += $(APPLIBS) $(IPROUTE2_MLNX) $(SX_COMPLIB) \
-		  $(SX_EXAMPLES) $(SX_GEN_UTILS) $(SX_SCEW) $(SXD_LIBS) $(WJH_LIBS)
+MLNX_SDK_RDEBS += $(APPLIBS) $(IPROUTE2_MLNX) $(SX_COMPLIB) $(SX_EXAMPLES) \
+                  $(SX_GEN_UTILS) $(SX_SCEW) $(SXD_LIBS) $(WJH_LIBS) $(SX_ACL_HELPER)
 
-MLNX_SDK_DEBS += $(APPLIBS_DEV) $(IPROUTE2_MLNX_DEV) \
-		 $(SX_COMPLIB_DEV) $(SX_COMPLIB_DEV_STATIC) $(SX_EXAMPLES_DEV) \
-		 $(SX_GEN_UTILS_DEV) $(SX_SCEW_DEV) $(SX_SCEW_DEV_STATIC) \
-		 $(SXD_LIBS_DEV) $(SXD_LIBS_DEV_STATIC) $(WJH_LIBS_DEV)
+MLNX_SDK_DEBS += $(APPLIBS_DEV) $(IPROUTE2_MLNX_DEV) $(SX_COMPLIB_DEV) \
+                 $(SX_COMPLIB_DEV_STATIC) $(SX_EXAMPLES_DEV) $(SX_GEN_UTILS_DEV) \
+                 $(SX_SCEW_DEV) $(SX_SCEW_DEV_STATIC) $(SXD_LIBS_DEV)\
+                 $(SXD_LIBS_DEV_STATIC) $(WJH_LIBS_DEV) $(SX_ACL_HELPER_DEV)
 
 MLNX_SDK_DBG_DEBS += $(APPLIBS_DBGSYM) $(IPROUTE2_MLNX_DBGSYM) $(SX_COMPLIB_DBGSYM) \
          $(SX_EXAMPLES_DBGSYM) $(SX_GEN_UTILS_DBGSYM) $(SX_SCEW_DBGSYM) \
-         $(SXD_LIBS_DBGSYM) $(WJH_LIBS_DBGSYM)
+         $(SXD_LIBS_DBGSYM) $(WJH_LIBS_DBGSYM) $(SX_ACL_HELPER_DBGSYM)
 
 APPLIBS = applibs_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
 $(APPLIBS)_SRC_PATH = $(PLATFORM_PATH)/sdk-src/applibs
@@ -69,7 +69,7 @@ endif
 
 SX_GEN_UTILS = sx-gen-utils_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
 $(SX_GEN_UTILS)_SRC_PATH += $(PLATFORM_PATH)/sdk-src/sx-gen-utils
-$(SX_GEN_UTILS)_DEPENDS += $(SX_COMPLIB_DEV) $(SXD_LIBS_DEV)
+$(SX_GEN_UTILS)_DEPENDS += $(SX_COMPLIB_DEV)
 $(SX_GEN_UTILS)_RDEPENDS += $(SX_COMPLIB)
 SX_GEN_UTILS_DEV = sx-gen-utils-dev_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
 $(eval $(call add_derived_package,$(SX_GEN_UTILS),$(SX_GEN_UTILS_DEV)))
@@ -89,7 +89,7 @@ endif
 
 SXD_LIBS = sxd-libs_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
 $(SXD_LIBS)_SRC_PATH = $(PLATFORM_PATH)/sdk-src/sxd-libs
-$(SXD_LIBS)_DEPENDS += $(SX_COMPLIB_DEV)
+$(SXD_LIBS)_DEPENDS += $(SX_COMPLIB_DEV) $(SX_GEN_UTILS_DEV)
 SXD_LIBS_DEV = sxd-libs-dev_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
 $(eval $(call add_derived_package,$(SXD_LIBS),$(SXD_LIBS_DEV)))
 SXD_LIBS_DBGSYM = sxd-libs-dbgsym_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
@@ -107,10 +107,21 @@ ifeq ($(SDK_FROM_SRC),y)
 $(eval $(call add_derived_package,$(PYTHON_SDK_API),$(PYTHON_SDK_API_DBGSYM)))
 endif
 
+SX_ACL_HELPER = sx-acl-helper_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
+$(SX_ACL_HELPER)_SRC_PATH = $(PLATFORM_PATH)/sdk-src/sx-acl-helper
+$(SX_ACL_HELPER)_DEPENDS += $(SX_COMPLIB_DEV) $(SXD_LIBS_DEV) $(APPLIBS_DEV)
+$(SX_ACL_HELPER)_RDEPENDS += $(SX_COMPLIB) $(PYTHON_SDK_API)
+SX_ACL_HELPER_DEV = sx-acl-helper-dev_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
+$(eval $(call add_derived_package,$(SX_ACL_HELPER),$(SX_ACL_HELPER_DEV)))
+SX_ACL_HELPER_DBGSYM = sx-acl-helper-dbgsym_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
+ifeq ($(SDK_FROM_SRC),y)
+$(eval $(call add_derived_package,$(SX_ACL_HELPER),$(SX_ACL_HELPER_DBGSYM)))
+endif
+
 WJH_LIBS = wjh-libs_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
 $(WJH_LIBS)_SRC_PATH = $(PLATFORM_PATH)/sdk-src/wjh-libs
-$(WJH_LIBS)_DEPENDS += $(SX_COMPLIB_DEV) $(SXD_LIBS_DEV) $(APPLIBS_DEV)
-$(WJH_LIBS)_RDEPENDS += $(SX_COMPLIB) $(PYTHON_SDK_API)
+$(WJH_LIBS)_DEPENDS += $(SX_COMPLIB_DEV) $(SXD_LIBS_DEV) $(APPLIBS_DEV) $(SX_ACL_HELPER_DEV) $(SX_SCEW_DEV)
+$(WJH_LIBS)_RDEPENDS += $(SX_COMPLIB) $(PYTHON_SDK_API) $(SX_ACL_HELPER)
 WJH_LIBS_DEV = wjh-libs-dev_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
 $(eval $(call add_derived_package,$(WJH_LIBS),$(WJH_LIBS_DEV)))
 WJH_LIBS_DBGSYM = wjh-libs-dbgsym_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
@@ -124,19 +135,21 @@ $(SX_KERNEL)_SRC_PATH = $(PLATFORM_PATH)/sdk-src/sx-kernel
 SX_KERNEL_DEV = sx-kernel-dev_1.mlnx.$(MLNX_SDK_DEB_VERSION)_amd64.deb
 $(eval $(call add_derived_package,$(SX_KERNEL),$(SX_KERNEL_DEV)))
 
-define make_url
-	$(1)_URL = $(MLNX_SDK_BASE_URL)/$(1)
+define make_path
+	$(1)_PATH = $(MLNX_SDK_BASE_PATH)
 
 endef
 
-$(eval $(foreach deb,$(MLNX_SDK_DEBS),$(call make_url,$(deb))))
-$(eval $(foreach deb,$(MLNX_SDK_RDEBS),$(call make_url,$(deb))))
-$(eval $(foreach deb,$(PYTHON_SDK_API) $(SX_KERNEL) $(SX_KERNEL_DEV),$(call make_url,$(deb))))
+$(eval $(foreach deb,$(MLNX_SDK_DEBS),$(call make_path,$(deb))))
+$(eval $(foreach deb,$(MLNX_SDK_RDEBS),$(call make_path,$(deb))))
+$(eval $(foreach deb,$(PYTHON_SDK_API) $(SX_KERNEL) $(SX_KERNEL_DEV),$(call make_path,$(deb))))
+
+SONIC_MAKE_DEBS += $(SX_KERNEL)
 
 ifeq ($(SDK_FROM_SRC), y)
-SONIC_MAKE_DEBS += $(MLNX_SDK_RDEBS) $(PYTHON_SDK_API) $(SX_KERNEL)
+SONIC_MAKE_DEBS += $(MLNX_SDK_RDEBS) $(PYTHON_SDK_API)
 else
-SONIC_ONLINE_DEBS += $(MLNX_SDK_RDEBS) $(PYTHON_SDK_API) $(SX_KERNEL)
+SONIC_COPY_DEBS += $(MLNX_SDK_RDEBS) $(PYTHON_SDK_API)
 endif
 
 SONIC_STRETCH_DEBS += $(SX_KERNEL)

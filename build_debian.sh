@@ -132,16 +132,11 @@ fi
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install busybox
 echo '[INFO] Install SONiC linux kernel image'
 ## Note: duplicate apt-get command to ensure every line return zero
-if [[ $CONFIGURED_ARCH == armhf || $CONFIGURED_ARCH == arm64 ]]; then
-    sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install cpio klibc-utils kmod libklibc udev linux-base
-    sudo dpkg --root=$FILESYSTEM_ROOT -i $debs_path/linux-image-*${CONFIGURED_ARCH}*.deb || \
-        sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install -f
-fi
 sudo dpkg --root=$FILESYSTEM_ROOT -i $debs_path/initramfs-tools-core_*.deb || \
     sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install -f
 sudo dpkg --root=$FILESYSTEM_ROOT -i $debs_path/initramfs-tools_*.deb || \
     sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install -f
-sudo dpkg --root=$FILESYSTEM_ROOT -i $debs_path/linux-image-${LINUX_KERNEL_VERSION}-${CONFIGURED_ARCH}_*.deb || \
+sudo dpkg --root=$FILESYSTEM_ROOT -i $debs_path/linux-image-${LINUX_KERNEL_VERSION}-*_${CONFIGURED_ARCH}.deb || \
     sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install -f
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install acl
 [[ $CONFIGURED_ARCH == amd64 ]] && sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install dmidecode
@@ -170,7 +165,7 @@ sudo chmod +x $FILESYSTEM_ROOT/etc/initramfs-tools/scripts/init-premount/resize-
 
 ## Hook into initramfs: after partition mount and loop file mount
 ## 1. Prepare layered file system
-## 2. Bind-mount docker working directory (docker aufs cannot work over aufs rootfs)
+## 2. Bind-mount docker working directory (docker overlay storage cannot work over overlay rootfs)
 sudo cp files/initramfs-tools/union-mount $FILESYSTEM_ROOT/etc/initramfs-tools/scripts/init-bottom/union-mount
 sudo chmod +x $FILESYSTEM_ROOT/etc/initramfs-tools/scripts/init-bottom/union-mount
 sudo cp files/initramfs-tools/varlog $FILESYSTEM_ROOT/etc/initramfs-tools/scripts/init-bottom/varlog
@@ -206,7 +201,7 @@ sudo LANG=C chroot $FILESYSTEM_ROOT apt-get update
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install docker-ce=${DOCKER_VERSION}
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y remove software-properties-common gnupg2
 
-## Add docker config drop-in to select aufs, otherwise it may select other storage driver
+## Add docker config drop-in to specify dockerd command line
 sudo mkdir -p $FILESYSTEM_ROOT/etc/systemd/system/docker.service.d/
 ## Note: $_ means last argument of last command
 sudo cp files/docker/docker.service.conf $_
@@ -342,31 +337,8 @@ sudo sed -i 's/^ListenAddress ::/#ListenAddress ::/' $FILESYSTEM_ROOT/etc/ssh/ss
 sudo sed -i 's/^#ListenAddress 0.0.0.0/ListenAddress 0.0.0.0/' $FILESYSTEM_ROOT/etc/ssh/sshd_config
 
 ## Config monit
-sudo sed -i '
-    s/^# set logfile syslog/set logfile syslog/;
-    s/^\s*set logfile \/var/# set logfile \/var/;
-    s/^# set httpd port/set httpd port/;
-    s/^#    use address localhost/   use address localhost/;
-    s/^#    allow localhost/   allow localhost/;
-    s/^#    allow admin:monit/   allow admin:monit/;
-    s/^#    allow @monit/   allow @monit/;
-    s/^#    allow @users readonly/   allow @users readonly/
-    ' $FILESYSTEM_ROOT/etc/monit/monitrc
-
-sudo tee -a $FILESYSTEM_ROOT/etc/monit/monitrc > /dev/null <<'EOF'
-check filesystem root-overlay with path /
-  if space usage > 90% for 5 times within 10 cycles then alert
-check filesystem var-log with path /var/log
-  if space usage > 90% for 5 times within 10 cycles then alert
-check system $HOST
-  if memory usage > 50% for 5 times within 10 cycles then alert
-  if cpu usage (user) > 90% for 5 times within 10 cycles then alert
-  if cpu usage (system) > 90% for 5 times within 10 cycles then alert
-check process rsyslog with pidfile /var/run/rsyslogd.pid
-  start program = "/bin/systemctl start rsyslog.service"
-  stop program = "/bin/systemctl stop rsyslog.service"
-  if totalmem > 800 MB for 5 times within 10 cycles then restart
-EOF
+sudo cp files/image_config/monit/monitrc $FILESYSTEM_ROOT/etc/monit/
+sudo chmod 600 $FILESYSTEM_ROOT/etc/monit/monitrc
 
 ## Config sysctl
 sudo mkdir -p $FILESYSTEM_ROOT/var/core
@@ -449,6 +421,9 @@ sudo cp files/dhcp/graphserviceurl $FILESYSTEM_ROOT/etc/dhcp/dhclient-exit-hooks
 sudo cp files/dhcp/snmpcommunity $FILESYSTEM_ROOT/etc/dhcp/dhclient-exit-hooks.d/
 sudo cp files/dhcp/vrf $FILESYSTEM_ROOT/etc/dhcp/dhclient-exit-hooks.d/
 sudo cp files/dhcp/dhclient.conf $FILESYSTEM_ROOT/etc/dhcp/
+if [ -f files/image_config/ntp/ntp ]; then
+    sudo cp ./files/image_config/ntp/ntp $FILESYSTEM_ROOT/etc/init.d/
+fi
 
 ## Version file
 sudo mkdir -p $FILESYSTEM_ROOT/etc/sonic
@@ -462,6 +437,9 @@ build_date: $(date -u)
 build_number: ${BUILD_NUMBER:-0}
 built_by: $USER@$BUILD_HOSTNAME
 EOF
+
+## Copy over clean-up script
+sudo cp ./files/scripts/core_cleanup.py $FILESYSTEM_ROOT/usr/bin/core_cleanup.py
 
 ## Copy ASIC config checksum
 python files/build_scripts/generate_asic_config_checksum.py

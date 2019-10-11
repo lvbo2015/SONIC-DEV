@@ -15,18 +15,27 @@ try:
     import subprocess
     import glob
     import sonic_device_util
-    from commands import getstatusoutput
     from sonic_platform_base.platform_base import PlatformBase
     from sonic_platform_base.chassis_base import ChassisBase
     from sonic_platform.sfp import Sfp
     from sonic_platform.psu import Psu
     from sonic_platform.fan import Fan
+    from sonic_platform.module import Module
+    from sonic_platform.thermal import Thermal
     from eeprom import Eeprom
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
+MAX_S6100_MODULE = 4
 MAX_S6100_FAN = 4
 MAX_S6100_PSU = 2
+MAX_S6100_THERMAL = 10
+
+BIOS_QUERY_VERSION_COMMAND = "dmidecode -s system-version"
+#components definitions
+COMPONENT_BIOS = "BIOS"
+SWITCH_CPLD = "CPLD"
+SMF_FPGA = "FPGA1"
 
 
 class Chassis(ChassisBase):
@@ -37,39 +46,6 @@ class Chassis(ChassisBase):
     HWMON_DIR = "/sys/devices/platform/SMF.512/hwmon/"
     HWMON_NODE = os.listdir(HWMON_DIR)[0]
     MAILBOX_DIR = HWMON_DIR + HWMON_NODE
-
-    PORT_START = 0
-    PORT_END = 63
-    PORTS_IN_BLOCK = (PORT_END + 1)
-    IOM1_PORT_START = 0
-    IOM2_PORT_START = 16
-    IOM3_PORT_START = 32
-    IOM4_PORT_START = 48
-
-    PORT_I2C_MAPPING = {}
-    # 0th Index = i2cLine, 1st Index = EepromIdx in i2cLine
-    EEPROM_I2C_MAPPING = {
-          # IOM 1
-           0: [6, 66],  1: [6, 67],  2: [6, 68],  3: [6, 69],
-           4: [6, 70],  5: [6, 71],  6: [6, 72],  7: [6, 73],
-           8: [6, 74],  9: [6, 75], 10: [6, 76], 11: [6, 77],
-          12: [6, 78], 13: [6, 79], 14: [6, 80], 15: [6, 81],
-          # IOM 2
-          16: [8, 34], 17: [8, 35], 18: [8, 36], 19: [8, 37],
-          20: [8, 38], 21: [8, 39], 22: [8, 40], 23: [8, 41],
-          24: [8, 42], 25: [8, 43], 26: [8, 44], 27: [8, 45],
-          28: [8, 46], 29: [8, 47], 30: [8, 48], 31: [8, 49],
-          # IOM 3
-          32: [7, 50], 33: [7, 51], 34: [7, 52], 35: [7, 53],
-          36: [7, 54], 37: [7, 55], 38: [7, 56], 39: [7, 57],
-          40: [7, 58], 41: [7, 59], 42: [7, 60], 43: [7, 61],
-          44: [7, 62], 45: [7, 63], 46: [7, 64], 47: [7, 65],
-          # IOM 4
-          48: [9, 18], 49: [9, 19], 50: [9, 20], 51: [9, 21],
-          52: [9, 22], 53: [9, 23], 54: [9, 24], 55: [9, 25],
-          56: [9, 26], 57: [9, 27], 58: [9, 28], 59: [9, 29],
-          60: [9, 30], 61: [9, 31], 62: [9, 32], 63: [9, 33]
-      }
 
     reset_reason_dict = {}
     reset_reason_dict[11] = ChassisBase.REBOOT_CAUSE_POWER_LOSS
@@ -83,13 +59,15 @@ class Chassis(ChassisBase):
     power_reason_dict[33] = ChassisBase.REBOOT_CAUSE_THERMAL_OVERLOAD_ASIC
     power_reason_dict[44] = ChassisBase.REBOOT_CAUSE_INSUFFICIENT_FAN_SPEED
 
-    _component_name_list = ["BIOS", "CPLD1", "CPLD2", "FPGA"]
-
     def __init__(self):
 
         ChassisBase.__init__(self)
         # Initialize EEPROM
         self.sys_eeprom = Eeprom()
+        for i in range(MAX_S6100_MODULE):
+            module = Module(i)
+            self._module_list.append(module)
+
         for i in range(MAX_S6100_FAN):
             fan = Fan(i)
             self._fan_list.append(fan)
@@ -98,38 +76,21 @@ class Chassis(ChassisBase):
             psu = Psu(i)
             self._psu_list.append(psu)
 
-        self._populate_port_i2c_mapping()
+        for i in range(MAX_S6100_THERMAL):
+            thermal = Thermal(i)
+            self._thermal_list.append(thermal)
 
-        # sfp.py will read eeprom contents and retrive the eeprom data.
-        # It will also provide support sfp controls like reset and setting
-        # low power mode.
-        # We pass the eeprom path and sfp control path from chassis.py
-        # So that sfp.py implementation can be generic to all platforms
-        eeprom_base = "/sys/class/i2c-adapter/i2c-{0}/i2c-{1}/{1}-0050/eeprom"
-        sfp_ctrl_base = "/sys/class/i2c-adapter/i2c-{0}/{0}-003e/"
-        for index in range(0, self.PORTS_IN_BLOCK):
-            eeprom_path = eeprom_base.format(self.EEPROM_I2C_MAPPING[index][0],
-                                             self.EEPROM_I2C_MAPPING[index][1])
-            sfp_control = sfp_ctrl_base.format(self.PORT_I2C_MAPPING[index])
-            sfp_node = Sfp(index, 'QSFP', eeprom_path, sfp_control, index)
-            self._sfp_list.append(sfp_node)
+        # Initialize component list
+        self._component_name_list.append(COMPONENT_BIOS)
+        self._component_name_list.append(SWITCH_CPLD)
+        self._component_name_list.append(SMF_FPGA)
 
-    def _populate_port_i2c_mapping(self):
-        # port_num and i2c match
-        for port_num in range(0, self.PORTS_IN_BLOCK):
-            if((port_num >= self.IOM1_PORT_START) and
-                    (port_num < self.IOM2_PORT_START)):
-                i2c_line = 14
-            elif((port_num >= self.IOM2_PORT_START) and
-                    (port_num < self.IOM3_PORT_START)):
-                i2c_line = 16
-            elif((port_num >= self.IOM3_PORT_START) and
-                    (port_num <self.IOM4_PORT_START)):
-                i2c_line = 15
-            elif((port_num >= self.IOM4_PORT_START) and
-                    (port_num < self.PORTS_IN_BLOCK)):
-                i2c_line = 17
-            self.PORT_I2C_MAPPING[port_num] = i2c_line
+    def _get_reboot_reason_smf_register(self):
+        # Returns 0xAA on software reload
+        # Returns 0xFF on power-cycle
+        # Returns 0x01 on first-boot
+        smf_mb_reg_reason = self._get_pmc_register('mb_poweron_reason')
+        return int(smf_mb_reg_reason, 16)
 
     def _get_pmc_register(self, reg_name):
         # On successful read, returns the value read from given
@@ -165,35 +126,44 @@ class Chassis(ChassisBase):
 
     def get_name(self):
         """
-        Retrieves the name of the device
+        Retrieves the name of the chassis
         Returns:
-            string: The name of the device
+            string: The name of the chassis
         """
         return self.sys_eeprom.modelstr()
 
     def get_presence(self):
         """
-        Retrieves the presence of the device
+        Retrieves the presence of the chassis
         Returns:
-            bool: True if device is present, False if not
+            bool: True if chassis is present, False if not
         """
         return True
 
     def get_model(self):
         """
-        Retrieves the model number (or part number) of the device
+        Retrieves the model number (or part number) of the chassis
         Returns:
-            string: Model/part number of device
+            string: Model/part number of chassis
         """
         return self.sys_eeprom.part_number_str()
 
     def get_serial(self):
         """
-        Retrieves the serial number of the device (Service tag)
+        Retrieves the serial number of the chassis (Service tag)
         Returns:
-            string: Serial number of device
+            string: Serial number of chassis
         """
         return self.sys_eeprom.serial_str()
+
+    def get_status(self):
+        """
+        Retrieves the operational status of the chassis
+        Returns:
+            bool: A boolean value, True if chassis is operating properly
+            False if not
+        """
+        return True
 
     def get_base_mac(self):
         """
@@ -210,7 +180,8 @@ class Chassis(ChassisBase):
         Retrieves the hardware serial number for the chassis
 
         Returns:
-            A string containing the hardware serial number for this chassis.
+            A string containing the hardware serial number for this
+            chassis.
         """
         return self.sys_eeprom.serial_number_str()
 
@@ -222,6 +193,7 @@ class Chassis(ChassisBase):
             OCP ONIE TlvInfo EEPROM format and values are their corresponding
             values.
         """
+        return self.sys_eeprom.system_eeprom_info()
 
     def get_reboot_cause(self):
         """
@@ -236,6 +208,10 @@ class Chassis(ChassisBase):
 
         reset_reason = int(self._get_pmc_register('smf_reset_reason'))
         power_reason = int(self._get_pmc_register('smf_poweron_reason'))
+        smf_mb_reg_reason = self._get_reboot_reason_smf_register()
+
+        if ((smf_mb_reg_reason == 0x01) and (power_reason == 0x11)):
+            return (ChassisBase.REBOOT_CAUSE_NON_HARDWARE, None)
 
         # Reset_Reason = 11 ==> PowerLoss
         # So return the reboot reason from Last Power_Reason Dictionary
@@ -244,44 +220,72 @@ class Chassis(ChassisBase):
         # checking key presence in dictionary else return
         # REBOOT_CAUSE_HARDWARE_OTHER as the Power_Reason and Reset_Reason
         # registers returned invalid data
+
+        # In S6100, if Reset_Reason is not 11 and smf_mb_reg_reason
+        # is ff or bb, then it is PowerLoss
         if (reset_reason == 11):
             if (power_reason in self.power_reason_dict):
                 return (self.power_reason_dict[power_reason], None)
         else:
+            if ((smf_mb_reg_reason == 0xbb) or (smf_mb_reg_reason == 0xff)):
+                return (ChassisBase.REBOOT_CAUSE_POWER_LOSS, None)
+
             if (reset_reason in self.reset_reason_dict):
                 return (self.reset_reason_dict[reset_reason], None)
 
         return (ChassisBase.REBOOT_CAUSE_HARDWARE_OTHER, "Invalid Reason")
 
-    def get_component_name_list(self):
-        """
-        Retrieves chassis components list such as BIOS, CPLD, FPGA, etc.
+    def _get_command_result(self, cmdline):
+        try:
+            proc = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
+                                    shell=True, stderr=subprocess.STDOUT)
+            stdout = proc.communicate()[0]
+            proc.wait()
+            result = stdout.rstrip('\n')
+        except OSError:
+            result = ''
 
-        Returns:
-            A list containing component name.
-        """
-        return self._component_name_list
+        return result
+
+    def _get_cpld_version(self):
+        io_resource = "/dev/port"
+        CPLD1_VERSION_ADDR = 0x100
+
+        fd = os.open(io_resource, os.O_RDONLY)
+        if (fd < 0):
+            return 'NA'
+        if (os.lseek(fd, CPLD1_VERSION_ADDR, os.SEEK_SET)
+            != CPLD1_VERSION_ADDR):
+            return 'NA'
+
+        buf = os.read(fd, 1)
+        cpld_version = ord(buf)
+        os.close(fd)
+
+        return "%d.%d" % (((cpld_version & 0xF0) >> 4), cpld_version & 0xF)
+
+    def _get_fpga_version(self):
+        fpga_ver = float(self._get_pmc_register('smf_firmware_ver'))
+        return fpga_ver
 
     def get_firmware_version(self, component_name):
+        """
+        Retrieves platform-specific hardware/firmware versions for
+        chassis componenets such as BIOS, CPLD, FPGA, etc.
+        Args:
+            component_name: A string, the component name.
+        Returns:
+            A string containing platform-specific component versions
+        """
+        if component_name in self._component_name_list :
+            if component_name == COMPONENT_BIOS:
+                return self._get_command_result(BIOS_QUERY_VERSION_COMMAND)
+            elif component_name == SWITCH_CPLD:
+                return self._get_cpld_version()
+            elif component_name == SMF_FPGA:
+                return self._get_fpga_version()
 
-        version = None
-
-        if component_name in self._component_name_list:
-
-            if component_name == self._component_name_list[0]:  # BIOS
-                status, version = getstatusoutput(
-                                        "dmidecode -s system-version")
-
-            elif component_name == self._component_name_list[1]:  # CPLD1
-                version = None
-
-            elif component_name == self._component_name_list[2]:  # CPLD2
-                version = None
-
-            elif component_name == self._component_name_list[3]:  # SMF
-                version = None
-
-        return version
+        return None
 
     def install_component_firmware(self, component_name, image_path):
 
@@ -303,7 +307,7 @@ class Chassis(ChassisBase):
         """
 
         if component_name in self._component_name_list:
-            if component_name == self._component_name_list[0]:  # BIOS
+            if component_name == COMPONENT_BIOS:  # BIOS
 
                 # current BIOS version
                 current_bios_version = self.get_firmware_version("BIOS")
@@ -363,16 +367,14 @@ class Chassis(ChassisBase):
                                          image_path
                     self.run_command(command)
 
-            elif component_name == self._component_name_list[1]:  # CPLD1
+            elif component_name == SWITCH_CPLD:  # CPLD
                 return False
 
-            elif component_name == self._component_name_list[2]:  # CPLD2
-                return False
-
-            elif component_name == self._component_name_list[3]:  # SMF
+            elif component_name == SMF_FPGA:  # SMF
                 return False
         else:
             print "Invalid component Name:", component_name
 
         return True
+
 

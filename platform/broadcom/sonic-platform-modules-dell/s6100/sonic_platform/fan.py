@@ -26,7 +26,7 @@ class Fan(FanBase):
     HWMON_NODE = os.listdir(HWMON_DIR)[0]
     MAILBOX_DIR = HWMON_DIR + HWMON_NODE
 
-    def __init__(self, fantray_index, fan_index=1, psu_fan=False):
+    def __init__(self, fantray_index=1, fan_index=1, psu_fan=False):
         self.is_psu_fan = psu_fan
         if not self.is_psu_fan:
             # API index is starting from 0, DellEMC platform index is starting
@@ -74,7 +74,7 @@ class Fan(FanBase):
             return "FanTray{}-Fan{}".format(
                                 self.fantrayindex, self.fanindex - 1)
         else:
-            return "PSU{} Fan".format(self.index - 10)
+            return "PSU{} Fan".format(self.fanindex - 10)
 
     def get_model(self):
         """
@@ -209,7 +209,19 @@ class Fan(FanBase):
         status = False
         return status
 
-	def get_target_speed(self):
+    def get_status_led(self):
+        """
+        Gets the state of the Fan status LED
+
+        Returns:
+            A string, one of the predefined STATUS_LED_COLOR_* strings.
+        """
+        if self.get_status():
+            return self.STATUS_LED_COLOR_GREEN
+        else:
+            return self.STATUS_LED_COLOR_OFF
+
+    def get_target_speed(self):
         """
         Retrieves the target (expected) speed of the fan
         Returns:
