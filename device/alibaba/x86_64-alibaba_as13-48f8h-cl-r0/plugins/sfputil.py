@@ -174,6 +174,10 @@ class SfpUtil(SfpUtilBase):
 
         # QSFP, set eeprom to disable tx
         if port_num in self.qsfp_ports:
+            presence = self.get_presence(port_num)
+            if not presence:
+                return True
+
             disable = b'\x0f' if disable else b'\x00'
             # open eeprom
             try:
