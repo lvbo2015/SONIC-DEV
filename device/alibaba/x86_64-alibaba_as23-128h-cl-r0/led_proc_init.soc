@@ -4,6 +4,10 @@
 #linkscan 250000; port xe,ce linkscan=on
 
 #Load LED
-#led auto on; led start
-
-
+sleep 20
+vlan clear
+sleep 5
+led auto on; led start
+port xe0,xe1 en=1
+port xe0,xe1 an=1
+vlan create 250 pbm=xe0,xe1 ubm=xe0,xe1
