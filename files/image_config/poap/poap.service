@@ -1,0 +1,13 @@
+[Unit]
+Description=poap service
+Requires=database.service
+After=database.service
+
+[Service]
+User=root
+ExecStart=/usr/bin/poap_autoinstall_diag
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target
