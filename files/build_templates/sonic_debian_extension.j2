@@ -154,6 +154,16 @@ sudo LANG=C chroot $FILESYSTEM_ROOT systemctl enable poap.service
 # Copy diag_app configuration files and templates
 sudo cp $IMAGE_CONFIGS/diag_app/Ali_Diag_V2.0.4.deb $FILESYSTEM_ROOT/home/
 
+# Copy port_led configuration files and templates
+sudo cp $IMAGE_CONFIGS/port_led/port-led $FILESYSTEM_ROOT/usr/bin/
+sudo cp $IMAGE_CONFIGS/port_led/port-alarm-led.py $FILESYSTEM_ROOT/usr/local/bin/
+sudo cp $IMAGE_CONFIGS/port_led/sonic_sfp.tar.gz $FILESYSTEM_ROOT/home/
+sudo cp $IMAGE_CONFIGS/port_led/port-alarm-led.service $FILESYSTEM_ROOT/etc/systemd/system/
+sudo tar zxvf $FILESYSTEM_ROOT/home/sonic_sfp.tar.gz -C $FILESYSTEM_ROOT/usr/local/lib/python2.7/dist-packages/ 
+sudo LANG=C chroot $FILESYSTEM_ROOT systemctl daemon-reload
+sudo LANG=C chroot $FILESYSTEM_ROOT systemctl enable port-alarm-led.service
+sudo LANG=C chroot $FILESYSTEM_ROOT systemctl start port-alarm-led.service
+
 # Copy warmboot-finalizer files
 sudo LANG=C cp $IMAGE_CONFIGS/warmboot-finalizer/finalize-warmboot.sh $FILESYSTEM_ROOT/usr/local/bin/finalize-warmboot.sh
 sudo LANG=C cp $IMAGE_CONFIGS/warmboot-finalizer/warmboot-finalizer.service $FILESYSTEM_ROOT/etc/systemd/system/

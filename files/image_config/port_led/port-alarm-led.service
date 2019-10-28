@@ -1,0 +1,13 @@
+[Unit]
+Description=port alarm led service
+Requires=database.service
+After=database.service
+
+[Service]
+User=root
+ExecStart=/usr/local/bin/port-alarm-led.py
+Restart=on-failure
+RestartSec=30s
+
+[Install]
+WantedBy=multi-user.target
