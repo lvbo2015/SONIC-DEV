@@ -11,18 +11,29 @@ try:
     import os
     import time
     import datetime
+    import subprocess
     from sonic_platform_base.chassis_base import ChassisBase
     from sonic_platform.sfp import Sfp
+    from sonic_platform.eeprom import Eeprom
+    from sonic_platform.fan import Fan
+    from sonic_platform.psu import Psu
+    from sonic_platform.thermal import Thermal
+    from sonic_platform.component import Component
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
+
+
+MAX_S6000_FAN = 3
+MAX_S6000_PSU = 2
+MAX_S6000_THERMAL = 10
+MAX_S6000_COMPONENT = 4
 
 
 class Chassis(ChassisBase):
     """
     DELLEMC Platform-specific Chassis class
     """
-
-    MAILBOX_DIR = "/sys/devices/platform/dell-s6000-cpld.0"
+    CPLD_DIR = "/sys/devices/platform/dell-s6000-cpld.0"
 
     sfp_control = ""
     PORT_START = 0
@@ -54,9 +65,26 @@ class Chassis(ChassisBase):
         # Get Transceiver status
         self.modprs_register = self._get_transceiver_status()
 
-    def get_register(self, reg_name):
+        self.sys_eeprom = Eeprom()
+        for i in range(MAX_S6000_FAN):
+            fan = Fan(i)
+            self._fan_list.append(fan)
+
+        for i in range(MAX_S6000_PSU):
+            psu = Psu(i)
+            self._psu_list.append(psu)
+
+        for i in range(MAX_S6000_THERMAL):
+            thermal = Thermal(i)
+            self._thermal_list.append(thermal)
+
+        for i in range(MAX_S6000_COMPONENT):
+            component = Component(i)
+            self._component_list.append(component)
+
+    def _get_cpld_register(self, reg_name):
         rv = 'ERR'
-        mb_reg_file = self.MAILBOX_DIR+'/'+reg_name
+        mb_reg_file = self.CPLD_DIR+'/'+reg_name
 
         if (not os.path.isfile(mb_reg_file)):
             return rv
@@ -71,19 +99,95 @@ class Chassis(ChassisBase):
         rv = rv.lstrip(" ")
         return rv
 
+    def get_name(self):
+        """
+        Retrieves the name of the chassis
+        Returns:
+            string: The name of the chassis
+        """
+        return self.sys_eeprom.modelstr()
+
+    def get_presence(self):
+        """
+        Retrieves the presence of the chassis
+        Returns:
+            bool: True if chassis is present, False if not
+        """
+        return True
+
+    def get_model(self):
+        """
+        Retrieves the model number (or part number) of the chassis
+        Returns:
+            string: Model/part number of chassis
+        """
+        return self.sys_eeprom.part_number_str()
+
+    def get_serial(self):
+        """
+        Retrieves the serial number of the chassis (Service tag)
+        Returns:
+            string: Serial number of chassis
+        """
+        return self.sys_eeprom.serial_str()
+
+    def get_status(self):
+        """
+        Retrieves the operational status of the chassis
+        Returns:
+            bool: A boolean value, True if chassis is operating properly
+            False if not
+        """
+        return True
+
+    def get_base_mac(self):
+        """
+        Retrieves the base MAC address for the chassis
+
+        Returns:
+            A string containing the MAC address in the format
+            'XX:XX:XX:XX:XX:XX'
+        """
+        return self.sys_eeprom.base_mac_addr()
+
+    def get_serial_number(self):
+        """
+        Retrieves the hardware serial number for the chassis
+
+        Returns:
+            A string containing the hardware serial number for this
+            chassis.
+        """
+        return self.sys_eeprom.serial_number_str()
+
+    def get_system_eeprom_info(self):
+        """
+        Retrieves the full content of system EEPROM information for the
+        chassis
+
+        Returns:
+            A dictionary where keys are the type code defined in
+            OCP ONIE TlvInfo EEPROM format and values are their
+            corresponding values.
+        """
+        return self.sys_eeprom.system_eeprom_info()
+
     def get_reboot_cause(self):
         """
         Retrieves the cause of the previous reboot
         """
-        reset_reason = int(self.get_register('last_reboot_reason'), base=16)
-
         # In S6000, We track the reboot reason by writing the reason in
         # NVRAM. Only Warmboot and Coldboot reason are supported here.
+        # Since it does not support any hardware reason, we return
+        # non_hardware as default
 
-        if (reset_reason in self.reset_reason_dict):
-            return (self.reset_reason_dict[reset_reason], None)
+        lrr = self._get_cpld_register('last_reboot_reason')
+        if (lrr != 'ERR'):
+            reset_reason = int(lrr, base=16)
+            if (reset_reason in self.reset_reason_dict):
+                return (self.reset_reason_dict[reset_reason], None)
 
-        return (ChassisBase.REBOOT_CAUSE_HARDWARE_OTHER, "Invalid Reason")
+        return (ChassisBase.REBOOT_CAUSE_NON_HARDWARE, None)
 
     def _get_transceiver_status(self):
         presence_ctrl = self.sfp_control + 'qsfp_modprs'
@@ -150,4 +254,5 @@ class Chassis(ChassisBase):
                         time.sleep(timeout)
                     return True, {}
         return False, {}
+
 

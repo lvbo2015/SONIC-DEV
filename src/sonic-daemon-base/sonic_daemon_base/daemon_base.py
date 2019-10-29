@@ -7,7 +7,6 @@ try:
     import os
     import sys
     import syslog
-    from swsscommon import swsscommon
 except ImportError, e:
     raise ImportError (str(e) + " - required module not found")
 
@@ -38,6 +37,7 @@ EEPROM_CLASS_NAME = 'board'
 #
 
 def db_connect(db):
+    from swsscommon import swsscommon
     return swsscommon.DBConnector(db,
                                   REDIS_HOSTNAME,
                                   REDIS_PORT,
@@ -48,9 +48,12 @@ def db_connect(db):
 #
 
 class Logger(object):
-    def __init__(self, syslog_identifier):
+    def __init__(self, syslog_identifier = None):
         self.syslog = syslog
-        self.syslog.openlog(ident=syslog_identifier, logoption=self.syslog.LOG_NDELAY, facility=self.syslog.LOG_DAEMON)
+        if syslog_identifier is None:
+            self.syslog.openlog()
+        else:
+            self.syslog.openlog(ident=syslog_identifier, logoption=self.syslog.LOG_NDELAY, facility=self.syslog.LOG_DAEMON)
 
     def __del__(self):
         self.syslog.closelog()

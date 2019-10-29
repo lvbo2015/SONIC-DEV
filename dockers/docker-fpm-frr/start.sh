@@ -16,6 +16,8 @@ elif [ "$CONFIG_TYPE" == "unified" ]; then
     rm -f /etc/frr/bgpd.conf /etc/frr/zebra.conf /etc/frr/staticd.conf
 fi
 
+chown -R frr:frr /etc/frr/
+
 sonic-cfggen -d -t /usr/share/sonic/templates/isolate.j2 > /usr/sbin/bgp-isolate
 chown root:root /usr/sbin/bgp-isolate
 chmod 0755 /usr/sbin/bgp-isolate
@@ -31,8 +33,6 @@ rm -f /var/run/rsyslogd.pid
 
 supervisorctl start rsyslogd
 
-supervisorctl start bgpcfgd
-
 # Start Quagga processes
 supervisorctl start zebra
 supervisorctl start staticd
@@ -43,3 +43,5 @@ if [ "$CONFIG_TYPE" == "unified" ]; then
 fi
 
 supervisorctl start fpmsyncd
+
+supervisorctl start bgpcfgd
