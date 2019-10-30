@@ -156,7 +156,9 @@ sudo cp $IMAGE_CONFIGS/diag_app/Ali_Diag_V2.0.4.deb $FILESYSTEM_ROOT/home/
 
 # Copy port_led configuration files and templates
 sudo cp $IMAGE_CONFIGS/port_led/port-led $FILESYSTEM_ROOT/usr/bin/
+sudo chmod a+x  $FILESYSTEM_ROOT/usr/bin/port-led
 sudo cp $IMAGE_CONFIGS/port_led/port-alarm-led.py $FILESYSTEM_ROOT/usr/local/bin/
+sudo chmod a+x  $FILESYSTEM_ROOT/usr/local/bin/port-alarm-led.py
 sudo cp $IMAGE_CONFIGS/port_led/sonic_sfp.tar.gz $FILESYSTEM_ROOT/home/
 sudo cp $IMAGE_CONFIGS/port_led/port-alarm-led.service $FILESYSTEM_ROOT/etc/systemd/system/
 sudo tar zxvf $FILESYSTEM_ROOT/home/sonic_sfp.tar.gz -C $FILESYSTEM_ROOT/usr/local/lib/python2.7/dist-packages/ 
