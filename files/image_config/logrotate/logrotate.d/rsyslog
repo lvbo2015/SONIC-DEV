@@ -37,8 +37,8 @@
 /var/log/swss/sairedis.rec
 /var/log/swss/swss.rec
 {
-    size 1M
-    rotate 5000
+    size 20M
+    rotate 20
     missingok
     notifempty
     compress
