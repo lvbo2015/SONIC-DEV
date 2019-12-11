@@ -1,7 +1,0 @@
-c6195f7afe839a8ef879e5140927f155  lib/modules/4.9.0-9-amd64/extra/emc2305.ko
-e7c8b2c4f4ab5d30e201df9a2df70ecd  lib/modules/4.9.0-9-amd64/extra/mc24lc64t.ko
-c48b0338dd4ded2c8e4b1b297ce771c4  lib/modules/4.9.0-9-amd64/extra/smc.ko
-13c0832b48c45db4a6b87b486dd7a5d6  lib/systemd/system/platform-modules-haliburton.service
-0676ca4c82bdbb0b4329296f3ea5903f  usr/local/bin/fpga_prog
-b41b1a4a1d02d2b9c4d53bfde8b7a1a0  usr/local/bin/ispvm
-dfec97cc46cfb89b0a08f267ece0cc0a  usr/share/doc/platform-modules-haliburton/changelog.gz

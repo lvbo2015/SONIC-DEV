@@ -1,6 +1,0 @@
-/etc/init.d/platform-modules-mystone
-/etc/modules-load.d/mystone-modules.conf
-/etc/systemd/system/bmc_vlan.service
-/etc/systemd/system/bmc_wdt.service
-/etc/systemd/system/sync_bmc.service
-/etc/systemd/system/sync_bmc.timer

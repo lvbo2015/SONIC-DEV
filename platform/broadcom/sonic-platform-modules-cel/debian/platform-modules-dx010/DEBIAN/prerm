@@ -1,7 +1,0 @@
-#!/bin/sh
-set -e
-# Automatically added by dh_installinit
-if [ -x "/etc/init.d/platform-modules-dx010" ]; then
-	invoke-rc.d platform-modules-dx010 stop || exit $?
-fi
-# End automatically added section

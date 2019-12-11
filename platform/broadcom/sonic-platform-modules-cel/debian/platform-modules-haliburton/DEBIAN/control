@@ -1,9 +1,0 @@
-Package: platform-modules-haliburton
-Source: sonic-cel-platform-modules
-Version: 1.0
-Architecture: amd64
-Maintainer: Wirut Getbamrung <wgetbumr@celestica.com>
-Installed-Size: 1225
-Section: main
-Priority: extra
-Description: kernel modules for platform devices such as fan, led, sfp
