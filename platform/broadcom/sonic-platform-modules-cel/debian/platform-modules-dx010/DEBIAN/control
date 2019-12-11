@@ -1,0 +1,9 @@
+Package: platform-modules-dx010
+Source: sonic-cel-platform-modules
+Version: 1.0
+Architecture: amd64
+Maintainer: Wirut Getbamrung <wgetbumr@celestica.com>
+Installed-Size: 1926
+Section: main
+Priority: extra
+Description: kernel modules for platform devices such as fan, led, sfp

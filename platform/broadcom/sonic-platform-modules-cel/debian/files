@@ -1,0 +1,7 @@
+platform-modules-dx010-dbgsym_1.0_amd64.deb debug extra
+platform-modules-dx010_1.0_amd64.deb main extra
+platform-modules-haliburton-dbgsym_1.0_amd64.deb debug extra
+platform-modules-haliburton_1.0_amd64.deb main extra
+platform-modules-mystone-dbgsym_1.0_amd64.deb debug extra
+platform-modules-mystone_1.0_amd64.deb main extra
+sonic-cel-platform-modules_1.0_amd64.buildinfo main extra
