@@ -107,7 +107,7 @@ sudo LANG=C chroot $FILESYSTEM_ROOT mount proc /proc -t proc
 
 ## Pointing apt to public apt mirrors and getting latest packages, needed for latest security updates
 sudo cp files/apt/sources.list.$CONFIGURED_ARCH $FILESYSTEM_ROOT/etc/apt/sources.list
-sudo cp files/apt/apt.conf.d/{81norecommends,apt-{clean,gzip-indexes,no-languages}} $FILESYSTEM_ROOT/etc/apt/apt.conf.d/
+sudo cp files/apt/apt.conf.d/{81norecommends,apt-{clean,gzip-indexes,no-languages},no-check-valid-until} $FILESYSTEM_ROOT/etc/apt/apt.conf.d/
 sudo LANG=C chroot $FILESYSTEM_ROOT bash -c 'apt-mark auto `apt-mark showmanual`'
 
 ## Note: set lang to prevent locale warnings in your chroot
@@ -176,6 +176,11 @@ sudo chmod +x $FILESYSTEM_ROOT/etc/initramfs-tools/scripts/init-bottom/varlog
 sudo cp files/initramfs-tools/union-fsck $FILESYSTEM_ROOT/etc/initramfs-tools/hooks/union-fsck
 sudo chmod +x $FILESYSTEM_ROOT/etc/initramfs-tools/hooks/union-fsck
 pushd $FILESYSTEM_ROOT/usr/share/initramfs-tools/scripts/init-bottom && sudo patch -p1 < $OLDPWD/files/initramfs-tools/udev.patch; popd
+if [[ $CONFIGURED_ARCH == armhf || $CONFIGURED_ARCH == arm64 ]]; then
+    sudo cp files/initramfs-tools/uboot-utils $FILESYSTEM_ROOT/etc/initramfs-tools/hooks/uboot-utils
+    sudo chmod +x $FILESYSTEM_ROOT/etc/initramfs-tools/hooks/uboot-utils
+    cat files/initramfs-tools/modules.arm | sudo tee -a $FILESYSTEM_ROOT/etc/initramfs-tools/modules > /dev/null
+fi
 
 if [[ $CONFIGURED_ARCH == amd64 ]]; then
     ## Install latest intel ixgbe driver
@@ -240,7 +245,6 @@ sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y in
     openssh-server          \
     python                  \
     python-setuptools       \
-    monit                   \
     python-apt              \
     traceroute              \
     iputils-ping            \
@@ -272,7 +276,8 @@ sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y in
     locales                 \
     cgroup-tools            \
     ipmitool                \
-    ndisc6
+    ndisc6                  \
+    makedumpfile
 
 
 if [[ $CONFIGURED_ARCH == amd64 ]]; then
@@ -281,6 +286,17 @@ sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y in
     flashrom                \
     mcelog
 fi
+
+## Set /etc/shadow permissions to -rw-------.
+sudo LANG=c chroot $FILESYSTEM_ROOT chmod 600 /etc/shadow
+
+## Set /etc/passwd, /etc/group permissions to -rw-r--r--.
+sudo LANG=c chroot $FILESYSTEM_ROOT chmod 644 /etc/passwd
+sudo LANG=c chroot $FILESYSTEM_ROOT chmod 644 /etc/group
+
+# Needed to install kdump-tools
+sudo LANG=C chroot $FILESYSTEM_ROOT /bin/bash -c "mkdir -p /etc/initramfs-tools/conf.d"
+sudo LANG=C chroot $FILESYSTEM_ROOT /bin/bash -c "echo 'MODULES=most' >> /etc/initramfs-tools/conf.d/driver-policy"
 
 #Adds a locale to a debian system in non-interactive mode
 sudo sed -i '/^#.* en_US.* /s/^#//' $FILESYSTEM_ROOT/etc/locale.gen && \
@@ -336,10 +352,6 @@ EOF
 sudo sed -i 's/^ListenAddress ::/#ListenAddress ::/' $FILESYSTEM_ROOT/etc/ssh/sshd_config
 sudo sed -i 's/^#ListenAddress 0.0.0.0/ListenAddress 0.0.0.0/' $FILESYSTEM_ROOT/etc/ssh/sshd_config
 
-## Config monit
-sudo cp files/image_config/monit/monitrc $FILESYSTEM_ROOT/etc/monit/
-sudo chmod 600 $FILESYSTEM_ROOT/etc/monit/monitrc
-
 ## Config sysctl
 sudo mkdir -p $FILESYSTEM_ROOT/var/core
 sudo augtool --autosave "
@@ -380,14 +392,14 @@ set /files/etc/sysctl.conf/net.ipv6.conf.default.keep_addr_on_down 1
 set /files/etc/sysctl.conf/net.ipv6.conf.all.keep_addr_on_down 1
 set /files/etc/sysctl.conf/net.ipv6.conf.eth0.keep_addr_on_down 1
 
-set /files/etc/sysctl.conf/net.ipv6.conf.eth0.accept_ra_defrtr 0
-set /files/etc/sysctl.conf/net.ipv6.conf.eth0.accept_ra 0
-
 set /files/etc/sysctl.conf/net.ipv4.tcp_l3mdev_accept 1
 set /files/etc/sysctl.conf/net.ipv4.udp_l3mdev_accept 1
 
 set /files/etc/sysctl.conf/net.core.rmem_max 2097152
 set /files/etc/sysctl.conf/net.core.wmem_max 2097152
+
+set /files/etc/sysctl.conf/net.core.somaxconn 512
+
 " -r $FILESYSTEM_ROOT
 
 if [[ $CONFIGURED_ARCH == amd64 ]]; then
@@ -417,10 +429,10 @@ EOF
 
 sudo cp files/dhcp/rfc3442-classless-routes $FILESYSTEM_ROOT/etc/dhcp/dhclient-exit-hooks.d
 sudo cp files/dhcp/sethostname $FILESYSTEM_ROOT/etc/dhcp/dhclient-exit-hooks.d/
+sudo cp files/dhcp/sethostname6 $FILESYSTEM_ROOT/etc/dhcp/dhclient-exit-hooks.d/
 sudo cp files/dhcp/graphserviceurl $FILESYSTEM_ROOT/etc/dhcp/dhclient-exit-hooks.d/
 sudo cp files/dhcp/snmpcommunity $FILESYSTEM_ROOT/etc/dhcp/dhclient-exit-hooks.d/
 sudo cp files/dhcp/vrf $FILESYSTEM_ROOT/etc/dhcp/dhclient-exit-hooks.d/
-sudo cp files/dhcp/dhclient.conf $FILESYSTEM_ROOT/etc/dhcp/
 if [ -f files/image_config/ntp/ntp ]; then
     sudo cp ./files/image_config/ntp/ntp $FILESYSTEM_ROOT/etc/init.d/
 fi
@@ -487,8 +499,22 @@ fi
 ## Remove gcc and python dev pkgs
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y remove gcc libpython2.7-dev
 
+## Add mtd and uboot firmware tools package
+sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install u-boot-tools mtd-utils
+sudo LANG=C chroot $FILESYSTEM_ROOT apt-mark manual u-boot-tools mtd-utils
+
 ## Update initramfs
 sudo chroot $FILESYSTEM_ROOT update-initramfs -u
+## Convert initrd image to u-boot format
+if [[ $CONFIGURED_ARCH == armhf || $CONFIGURED_ARCH == arm64 ]]; then
+    INITRD_FILE=initrd.img-${LINUX_KERNEL_VERSION}-${CONFIGURED_ARCH}
+    if [[ $CONFIGURED_ARCH == armhf ]]; then
+        INITRD_FILE=initrd.img-${LINUX_KERNEL_VERSION}-armmp
+    fi
+    sudo LANG=C chroot $FILESYSTEM_ROOT mkimage -A arm -O linux -T ramdisk -C gzip -d /boot/$INITRD_FILE /boot/u${INITRD_FILE}
+    ## Overwriting the initrd image with uInitrd
+    sudo LANG=C chroot $FILESYSTEM_ROOT mv /boot/u${INITRD_FILE} /boot/$INITRD_FILE
+fi
 
 ## Clean up apt
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y autoremove

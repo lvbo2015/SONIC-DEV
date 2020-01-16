@@ -2,7 +2,7 @@
 
 SERVICE="swss"
 PEER="syncd"
-DEPENDENT="teamd radv"
+DEPENDENT="teamd radv dhcp_relay"
 DEBUGLOG="/tmp/swss-syncd-debug.log"
 LOCKFILE="/tmp/swss-syncd-lock"
 
@@ -131,7 +131,22 @@ start() {
 
 wait() {
     start_peer_and_dependent_services
-    /usr/bin/${SERVICE}.sh wait
+
+    # Allow some time for peer container to start
+    # NOTE: This assumes Docker containers share the same names as their
+    # corresponding services
+    for SECS in {1..60}; do
+        RUNNING=$(docker inspect -f '{{.State.Running}}' ${PEER})
+        if [[ x"$RUNNING" == x"true" ]]; then
+            break
+        else
+            sleep 1
+        fi
+    done
+
+    # NOTE: This assumes Docker containers share the same names as their
+    # corresponding services
+    /usr/bin/docker-wait-any ${SERVICE} ${PEER}
 }
 
 stop() {
@@ -145,6 +160,13 @@ stop() {
 
     /usr/bin/${SERVICE}.sh stop
     debug "Stopped ${SERVICE} service..."
+
+    # Flush FAST_REBOOT table when swss needs to stop. The only
+    # time when this would take effect is when fast-reboot
+    # encountered error, e.g. syncd crashed. And swss needs to
+    # be restarted.
+    debug "Clearing FAST_REBOOT flag..."
+    clean_up_tables 6 "'FAST_REBOOT*'"
 
     # Unlock has to happen before reaching out to peer service
     unlock_service_state_change

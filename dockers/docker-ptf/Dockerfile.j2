@@ -29,10 +29,12 @@ RUN sed --in-place 's/httpredir.debian.org/debian-archive.trafficmanager.net/' /
     && apt-get install -y   \
         openssh-server      \
         vim                 \
+        telnet              \
         net-tools           \
         traceroute          \
         lsof                \
         tcpdump             \
+        ethtool             \
         unzip               \
         pkg-config          \
         binutils            \
@@ -51,8 +53,10 @@ RUN sed --in-place 's/httpredir.debian.org/debian-archive.trafficmanager.net/' /
         hping3              \
         curl                \
         tcpdump             \
+        tmux                \
         python              \
         python-dev          \
+        python-libpcap      \
         python-scapy        \
         python-six
 

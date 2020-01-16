@@ -14,6 +14,7 @@ try:
     from sonic_daemon_base.daemon_base import Logger
     from os import listdir
     from os.path import isfile, join
+    from glob import glob
     import sys
     import io
     import re
@@ -33,6 +34,10 @@ EEPROM_CACHE_FILE = 'syseeprom_cache'
 
 HWMGMT_SYSTEM_ROOT = '/var/run/hw-management/system/'
 
+MST_DEVICE_NAME_PATTERN = '/dev/mst/mt[0-9]*_pciconf0'
+MST_DEVICE_RE_PATTERN = '/dev/mst/mt([0-9]*)_pciconf0'
+SPECTRUM1_CHIP_ID = '52100'
+
 #reboot cause related definitions
 REBOOT_CAUSE_ROOT = HWMGMT_SYSTEM_ROOT
 
@@ -43,8 +48,8 @@ logger = Logger()
 
 # magic code defnition for port number, qsfp port position of each hwsku
 # port_position_tuple = (PORT_START, QSFP_PORT_START, PORT_END, PORT_IN_BLOCK, EEPROM_OFFSET)
-hwsku_dict_port = {'ACS-MSN2700': 0, "LS-SN2700":0, 'ACS-MSN2740': 0, 'ACS-MSN2100': 1, 'ACS-MSN2410': 2, 'ACS-MSN2010': 3, 'ACS-MSN3700': 0, 'ACS-MSN3700C': 0, 'Mellanox-SN2700': 0, 'Mellanox-SN2700-D48C8': 0}
-port_position_tuple_list = [(0, 0, 31, 32, 1), (0, 0, 15, 16, 1), (0, 48, 55, 56, 1),(0, 18, 21, 22, 1)]
+hwsku_dict_port = {'ACS-MSN2010': 3, 'ACS-MSN2100': 1, 'ACS-MSN2410': 2, 'ACS-MSN2700': 0, 'Mellanox-SN2700': 0, 'Mellanox-SN2700-D48C8': 0, 'LS-SN2700':0, 'ACS-MSN2740': 0, 'ACS-MSN3700': 0, 'ACS-MSN3700C': 0, 'ACS-MSN3800': 4}
+port_position_tuple_list = [(0, 0, 31, 32, 1), (0, 0, 15, 16, 1), (0, 48, 55, 56, 1), (0, 18, 21, 22, 1), (0, 0, 63, 64, 1)]
 
 class Chassis(ChassisBase):
     """Platform-specific Chassis class"""
@@ -87,11 +92,21 @@ class Chassis(ChassisBase):
         num_of_fan, num_of_drawer = self._extract_num_of_fans_and_fan_drawers()
         multi_rotor_in_drawer = num_of_fan > num_of_drawer
 
+        # Fan's direction isn't supported on spectrum 1 devices for now
+        mst_dev_list = glob(MST_DEVICE_NAME_PATTERN)
+        if not mst_dev_list:
+            raise RuntimeError("Can't get chip type due to {} not found".format(MST_DEVICE_NAME_PATTERN))
+        m = re.search(MST_DEVICE_RE_PATTERN, mst_dev_list[0])
+        if m.group(1) == SPECTRUM1_CHIP_ID:
+            has_fan_dir = False
+        else:
+            has_fan_dir = True
+
         for index in range(num_of_fan):
             if multi_rotor_in_drawer:
-                fan = Fan(index, index/2)
+                fan = Fan(has_fan_dir, index, index/2)
             else:
-                fan = Fan(index, index)
+                fan = Fan(has_fan_dir, index, index)
             self._fan_list.append(fan)
 
 

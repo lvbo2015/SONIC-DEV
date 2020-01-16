@@ -9,7 +9,7 @@ $(DOCKER_SYNCD_BRCM_RPC)_DEPENDS += $(SYNCD_RPC_DBG) \
                                     $(LIBSAIMETADATA_DBG) \
                                     $(LIBSAIREDIS_DBG)
 endif
-$(DOCKER_SYNCD_BRCM_RPC)_FILES += $(DSSERVE) $(BCMCMD)
+$(DOCKER_SYNCD_BRCM_RPC)_FILES += $(DSSERVE) $(BCMCMD) $(SUPERVISOR_PROC_EXIT_LISTENER_SCRIPT)
 $(DOCKER_SYNCD_BRCM_RPC)_LOAD_DOCKERS += $(DOCKER_SYNCD_BASE)
 SONIC_DOCKER_IMAGES += $(DOCKER_SYNCD_BRCM_RPC)
 SONIC_STRETCH_DOCKERS += $(DOCKER_SYNCD_BRCM_RPC)
@@ -23,3 +23,7 @@ $(DOCKER_SYNCD_BRCM_RPC)_RUN_OPT += -v /host/machine.conf:/etc/machine.conf
 $(DOCKER_SYNCD_BRCM_RPC)_RUN_OPT += -v /host/warmboot:/var/warmboot
 $(DOCKER_SYNCD_BRCM_RPC)_RUN_OPT += -v /var/run/docker-syncd:/var/run/sswsyncd
 $(DOCKER_SYNCD_BRCM_RPC)_RUN_OPT += -v /etc/sonic:/etc/sonic:ro
+
+$(DOCKER_SYNCD_BRCM_RPC)_BASE_IMAGE_FILES += bcmcmd:/usr/bin/bcmcmd
+$(DOCKER_SYNCD_BRCM_RPC)_BASE_IMAGE_FILES += bcmsh:/usr/bin/bcmsh
+

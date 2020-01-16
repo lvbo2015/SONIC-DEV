@@ -34,6 +34,7 @@ COPY ["sources.list.arm64", "/etc/apt/sources.list"]
 COPY ["sources.list", "/etc/apt/sources.list"]
 {% endif %}
 COPY ["no_install_recommend_suggest", "/etc/apt/apt.conf.d"]
+COPY ["no-check-valid-until", "/etc/apt/apt.conf.d"]
 
 # Update apt cache and
 # pre-install fundamental packages
@@ -47,7 +48,13 @@ RUN apt-get update &&        \
         vim-tiny             \
 # Install dependencies of supervisor
         python-pkg-resources \
-        python-meld3
+        python-meld3         \
+# dependencies of redis-tools
+        libatomic1           \
+        libjemalloc1         \
+        liblua5.1-0          \
+        lua-bitop            \
+        lua-cjson
 
 {% if CONFIGURED_ARCH == "armhf" %}
 # ip and ifconfig utility missing in docker for armhf
@@ -82,5 +89,7 @@ RUN apt-get clean -y                     && \
 COPY ["etc/rsyslog.conf", "/etc/rsyslog.conf"]
 COPY ["etc/rsyslog.d/*", "/etc/rsyslog.d/"]
 COPY ["root/.vimrc", "/root/.vimrc"]
+
+RUN ln /usr/bin/vim.tiny /usr/bin/vim
 
 COPY ["etc/supervisor/supervisord.conf", "/etc/supervisor/"]

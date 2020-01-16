@@ -8,6 +8,8 @@ FROM debian:stretch
 
 MAINTAINER gulv@microsoft.com
 
+COPY ["no-check-valid-until", "/etc/apt/apt.conf.d/"]
+
 RUN echo "deb [arch=amd64] http://debian-archive.trafficmanager.net/debian/ stretch main contrib non-free" >> /etc/apt/sources.list && \
         echo "deb-src [arch=amd64] http://debian-archive.trafficmanager.net/debian/ stretch main contrib non-free" >> /etc/apt/sources.list && \
         echo "deb [arch=amd64] http://debian-archive.trafficmanager.net/debian-security/ stretch/updates main contrib non-free" >> /etc/apt/sources.list && \
@@ -289,7 +291,22 @@ RUN apt-get update && apt-get install -y \
         rrdtool \
 # For smartmontools 6.6-1
         automake1.11 \
-        libselinux1-dev
+        libselinux1-dev \
+# For kdump-tools
+        liblzo2-dev \
+# For SAI3.7
+        libprotobuf-dev \
+# For DHCP Monitor tool
+        libexplain-dev \
+        libevent-dev
+
+## Config dpkg
+## install the configuration file if it’s currently missing
+RUN sudo augtool --autosave "set /files/etc/dpkg/dpkg.cfg/force-confmiss"
+## combined with confold: overwrite configuration files that you have not modified
+RUN sudo augtool --autosave "set /files/etc/dpkg/dpkg.cfg/force-confdef"
+## do not modify the current configuration file, the new version is installed with a .dpkg-dist suffix
+RUN sudo augtool --autosave "set /files/etc/dpkg/dpkg.cfg/force-confold"
 
 # For smartmontools 6.6-1
 RUN apt-get -t stretch-backports install -y debhelper
@@ -349,6 +366,9 @@ RUN pip install pexpect==4.6.0
 RUN pip install mockredispy==2.9.3
 RUN pip install pytest-runner==4.4
 RUN pip install setuptools==40.8.0
+
+# For mgmt-framework build
+RUN pip install mmh3
 
 # Install dependencies for isc-dhcp-relay build
 RUN apt-get -y build-dep isc-dhcp

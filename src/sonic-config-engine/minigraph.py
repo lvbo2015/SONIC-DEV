@@ -30,8 +30,18 @@ ns3 = "http://www.w3.org/2001/XMLSchema-instance"
 spine_chassis_frontend_role = 'SpineChassisFrontendRouter'
 chassis_backend_role = 'ChassisBackendRouter'
 
+backend_device_types = ['BackEndToRRouter', 'BackEndLeafRouter']
+VLAN_SUB_INTERFACE_SEPARATOR = '.'
+VLAN_SUB_INTERFACE_VLAN_ID = '10'
+
 # Default Virtual Network Index (VNI) 
 vni_default = 8000
+
+###############################################################################
+#
+# Minigraph parsing functions
+#
+###############################################################################
 
 class minigraph_encoder(json.JSONEncoder):
     def default(self, obj):
@@ -274,15 +284,17 @@ def parse_dpg(dpg, hname):
                     if member.lower().startswith('erspanv6'):
                         is_mirror_v6 = True
                     else:
-                        is_mirror = True;
-                    # Erspan session will be attached to all front panel ports,
-                    # if panel ports is a member port of LAG, should add the LAG 
-                    # to acl table instead of the panel ports
+                        is_mirror = True
+                    # Erspan session will be attached to all front panel ports
+                    # initially. If panel ports is a member port of LAG, then
+                    # the LAG will be added to acl table instead of the panel
+                    # ports. Non-active ports will be removed from this list
+                    # later after the rest of the minigraph has been parsed.
                     acl_intfs = pc_intfs[:]
                     for panel_port in port_alias_map.values():
                         if panel_port not in intfs_inpc:
                             acl_intfs.append(panel_port)
-                    break;
+                    break
             if acl_intfs:
                 acls[aclname] = {'policy_desc': aclname,
                                  'ports': acl_intfs}
@@ -374,8 +386,8 @@ def parse_cpg(cpg, hname):
                                 'name': name,
                                 'ip_range': ip_range_group
                             }
-                            if bgpPeer.find(str(QName(ns1, "Address"))) is not None:
-                                bgp_peers_with_range[name]['src_address'] = bgpPeer.find(str(QName(ns1, "Address"))).text
+                            if bgpPeer.find(str(QName(ns, "Address"))) is not None:
+                                bgp_peers_with_range[name]['src_address'] = bgpPeer.find(str(QName(ns, "Address"))).text
                             if bgpPeer.find(str(QName(ns1, "PeerAsn"))) is not None:
                                 bgp_peers_with_range[name]['peer_asn'] = bgpPeer.find(str(QName(ns1, "PeerAsn"))).text
                 else:
@@ -510,6 +522,39 @@ def parse_spine_chassis_fe(results, vni, lo_intfs, phyport_intfs, pc_intfs, pc_m
             # Enslave the port channel interface to a Vnet
             pc_intfs[pc_intf] = {'vnet_name': chassis_vnet}        
 
+###############################################################################
+#
+# Post-processing functions
+#
+###############################################################################
+
+def filter_acl_mirror_table_bindings(acls, neighbors, port_channels):
+    """
+        Filters out inactive front-panel ports from the binding list for mirror
+        ACL tables. We define an "active" port as one that is a member of a
+        port channel or one that is connected to a neighboring device.
+    """
+
+    for acl_table, group_params in acls.iteritems():
+        group_type = group_params.get('type', None)
+
+        if group_type != 'MIRROR' and group_type != 'MIRRORV6':
+            continue
+
+        active_ports = [ port for port in group_params.get('ports', []) if port in neighbors.keys() or port in port_channels ]
+
+        if not active_ports:
+            print >> sys.stderr, 'Warning: mirror table {} in ACL_TABLE does not have any ports bound to it'.format(acl_table)
+
+        acls[acl_table]['ports'] = active_ports
+
+    return acls
+
+###############################################################################
+#
+# Main functions
+#
+###############################################################################
 
 def parse_xml(filename, platform=None, port_config_file=None):
     root = ET.parse(filename).getroot()
@@ -528,7 +573,7 @@ def parse_xml(filename, platform=None, port_config_file=None):
     vlan_members = None
     pcs = None
     mgmt_intf = None
-    lo_intf = None
+    lo_intfs = None
     neighbors = None
     devices = None
     hostname = None
@@ -582,7 +627,13 @@ def parse_xml(filename, platform=None, port_config_file=None):
         'hostname': hostname,
         'hwsku': hwsku,
         'type': current_device['type']
-        }}
+        },
+        'x509': {
+            'server_crt': '/etc/sonic/telemetry/streamingtelemetryserver.cer',
+            'server_key': '/etc/sonic/telemetry/streamingtelemetryserver.key',
+            'ca_crt': '/etc/sonic/telemetry/dsmsroot.cer'
+        }
+    }
     results['BGP_NEIGHBOR'] = bgp_sessions
     results['BGP_MONITORS'] = bgp_monitors
     results['BGP_PEER_RANGE'] = bgp_peers_with_range
@@ -605,13 +656,17 @@ def parse_xml(filename, platform=None, port_config_file=None):
         if alias in port_speeds_default:
             results['MGMT_PORT'][name]['speed'] = port_speeds_default[alias]
         results['MGMT_INTERFACE'][(name, key[1])] = mgmt_intf[key]
-    results['LOOPBACK_INTERFACE'] = lo_intfs
+    results['LOOPBACK_INTERFACE'] = {}
+    for lo_intf in lo_intfs:
+        results['LOOPBACK_INTERFACE'][lo_intf] = lo_intfs[lo_intf]
+        results['LOOPBACK_INTERFACE'][lo_intf[0]] = {}
     results['MGMT_VRF_CONFIG'] = mvrf
 
     phyport_intfs = {}
     vlan_intfs = {}
     pc_intfs = {}
     vlan_invert_mapping = { v['alias']:k for k,v in vlans.items() if v.has_key('alias') }
+    vlan_sub_intfs = {}
 
     for intf in intfs:
         if intf[0][0:4] == 'Vlan':
@@ -713,6 +768,32 @@ def parse_xml(filename, platform=None, port_config_file=None):
 
     results['PORTCHANNEL_INTERFACE'] = pc_intfs
 
+    if current_device['type'] in backend_device_types:
+        del results['INTERFACE']
+        del results['PORTCHANNEL_INTERFACE']
+
+        for intf in phyport_intfs.keys():
+            if isinstance(intf, tuple):
+                intf_info = list(intf)
+                intf_info[0] = intf_info[0] + VLAN_SUB_INTERFACE_SEPARATOR + VLAN_SUB_INTERFACE_VLAN_ID
+                sub_intf = tuple(intf_info)
+                vlan_sub_intfs[sub_intf] = {}
+            else:
+                sub_intf = intf + VLAN_SUB_INTERFACE_SEPARATOR + VLAN_SUB_INTERFACE_VLAN_ID
+                vlan_sub_intfs[sub_intf] = {"admin_status" : "up"}
+
+        for pc_intf in pc_intfs.keys():
+            if isinstance(pc_intf, tuple):
+                pc_intf_info = list(pc_intf)
+                pc_intf_info[0] = pc_intf_info[0] + VLAN_SUB_INTERFACE_SEPARATOR + VLAN_SUB_INTERFACE_VLAN_ID
+                sub_intf = tuple(pc_intf_info)
+                vlan_sub_intfs[sub_intf] = {}
+            else:
+                sub_intf = pc_intf + VLAN_SUB_INTERFACE_SEPARATOR + VLAN_SUB_INTERFACE_VLAN_ID
+                vlan_sub_intfs[sub_intf] = {"admin_status" : "up"}
+
+        results['VLAN_SUB_INTERFACE'] = vlan_sub_intfs
+
     results['VLAN'] = vlans
     results['VLAN_MEMBER'] = vlan_members
 
@@ -728,8 +809,19 @@ def parse_xml(filename, platform=None, port_config_file=None):
     results['DHCP_SERVER'] = dict((item, {}) for item in dhcp_servers)
     results['NTP_SERVER'] = dict((item, {}) for item in ntp_servers)
     results['TACPLUS_SERVER'] = dict((item, {'priority': '1', 'tcp_port': '49'}) for item in tacacs_servers)
-
-    results['ACL_TABLE'] = acls
+    results['ACL_TABLE'] = filter_acl_mirror_table_bindings(acls, neighbors, pcs)
+    results['FEATURE'] = {
+        'telemetry': {
+            'status': 'enabled'
+        }
+    }
+    results['TELEMETRY'] = {
+        'gnmi': {
+            'client_auth': 'true',
+            'port': '50051',
+            'log_level': '2'
+        }
+    }
 
     # Do not configure the minigraph's mirror session, which is currently unused
     # mirror_sessions = {}
