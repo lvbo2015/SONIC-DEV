@@ -1,7 +1,14 @@
+#!/usr/bin/env python
+#
 # fwmgrutil.py
 #
 # Platform-specific firmware management interface for SONiC
 #
+
+__author__ = 'Wirut G.<wgetbumr@celestica.com>'
+__license__ = "GPL"
+__version__ = "0.2.0"
+__status__ = "Development"
 
 import subprocess
 import requests
@@ -27,9 +34,14 @@ class FwMgrUtil(FwMgrUtilBase):
     def __init__(self):
         self.platform_name = "AS23128h"
         self.onie_config_file = "/host/machine.conf"
-        self.bmc_info_url = "http://240.1.1.1:8080/api/sys/bmc"
-        self.bmc_raw_command_url = "http://240.1.1.1:8080/api/sys/raw"
-        self.fw_upgrade_url = "http://240.1.1.1:8080/api/sys/upgrade"
+        self.bmc_info_url = "http://240.1.1.1:8080/api/bmc/info"
+        self.cpld_info_url = "http://240.1.1.1:8080/api/firmware/cpldversion"
+        self.bmc_raw_command_url = "http://240.1.1.1:8080/api/hw/rawcmd"
+        self.fw_upgrade_url = "http://240.1.1.1:8080/api/firmware/upgrade"
+        self.bios_next_boot = "http://240.1.1.1:8080/api/firmware/biosnextboot"
+        self.bmc_next_boot = "http://240.1.1.1:8080/api/firmware/bmcnextboot"
+        self.bmc_reboot_url = "http://240.1.1.1:8080/api/bmc/reboot"
+        self.bios_boot_info = "http://240.1.1.1:8080/api/misc/biosbootstatus"
         self.onie_config_file = "/host/machine.conf"
         self.fw_upgrade_logger_path = "/var/log/fw_upgrade.log"
         self.cpldb_version_path = "/sys/devices/platform/%s.cpldb/getreg" % self.platform_name
@@ -39,6 +51,8 @@ class FwMgrUtil(FwMgrUtilBase):
         self.switchboard_cpld3_path = "/sys/devices/platform/%s.switchboard/CPLD3/getreg" % self.platform_name
         self.switchboard_cpld4_path = "/sys/devices/platform/%s.switchboard/CPLD4/getreg" % self.platform_name
         self.bmc_pwd_path = "/usr/local/etc/bmcpwd"
+        self.cpld_name_list = ["CPU_CPLD",  "COMBO_CPLD",
+                               "SW_CPLD1", "SW_CPLD2", "TOP_LC_CPLD", "BOT_LC_CPLD"]
 
     def __get_register_value(self, path, register):
         cmd = "echo {1} > {0}; cat {0}".format(path, register)
@@ -89,12 +103,11 @@ class FwMgrUtil(FwMgrUtilBase):
 
         """
         bmc_version = None
-
-        bmc_version_key = "OpenBMC Version"
+        bmc_version_key = "Version"
         bmc_info_req = requests.get(self.bmc_info_url, timeout=60)
         if bmc_info_req.status_code == 200:
             bmc_info_json = bmc_info_req.json()
-            bmc_info = bmc_info_json.get('Information')
+            bmc_info = bmc_info_json.get('data')
             bmc_version = bmc_info.get(bmc_version_key)
         return str(bmc_version)
 
@@ -124,13 +137,13 @@ class FwMgrUtil(FwMgrUtilBase):
         CPLD_3 = self.__get_register_value(self.switchboard_cpld3_path, '0x00')
         CPLD_4 = self.__get_register_value(self.switchboard_cpld4_path, '0x00')
 
-        fan_cpld_key = "FanCPLD Version"
+        fan_cpld_key = "FAN_CPLD"
         fan_cpld = None
-        bmc_info_req = requests.get(self.bmc_info_url)
-        if bmc_info_req.status_code == 200:
-            bmc_info_json = bmc_info_req.json()
-            bmc_info = bmc_info_json.get('Information')
-            fan_cpld = bmc_info.get(fan_cpld_key)
+        fan_cpld_req = requests.get(self.cpld_info_url)
+        if fan_cpld_req.status_code == 200:
+            fancpld_info_json = fan_cpld_req.json()
+            fancpld_info_data = fancpld_info_json.get('data')
+            fan_cpld = fancpld_info_data.get(fan_cpld_key)
 
         CPLD_B = 'None' if CPLD_B is 'None' else "{}.{}".format(
             int(CPLD_B[2], 16), int(CPLD_B[3], 16))
@@ -144,8 +157,7 @@ class FwMgrUtil(FwMgrUtilBase):
             int(CPLD_3[2], 16), int(CPLD_3[3], 16))
         CPLD_4 = 'None' if CPLD_4 is 'None' else "{}.{}".format(
             int(CPLD_4[2], 16), int(CPLD_4[3], 16))
-        FAN_CPLD = 'None' if fan_cpld is None else "{}.{}".format(
-            int(fan_cpld[0], 16), int(fan_cpld[1], 16))
+        FAN_CPLD = 'None' if fan_cpld is None else fan_cpld
 
         cpld_version_dict = {}
         cpld_version_dict.update({'CPLD_B': CPLD_B})
@@ -260,8 +272,7 @@ class FwMgrUtil(FwMgrUtilBase):
 
             filename_w_ext = os.path.basename(fw_path)
             json_data = dict()
-            json_data["path"] = "root@127.0.0.1:/home/root/%s" % filename_w_ext
-            json_data["password"] = bmc_pwd
+            json_data["Path"] = "/home/root/%s" % filename_w_ext
 
             # Set flash type
             current_bmc = self.get_running_bmc()
@@ -270,25 +281,25 @@ class FwMgrUtil(FwMgrUtilBase):
             if fw_extra_str == "pingpong":
                 #flash = "master" if current_bmc == "slave" else "slave"
                 flash = "slave"
-            json_data["flash"] = flash
+            json_data["Flash"] = flash
 
             # Install BMC
             if flash == "both":
                 self.__update_fw_upgrade_logger(
                     "bmc_upgrade", "install BMC as master mode")
-                json_data["flash"] = "master"
-                r = requests.post(self.bmc_info_url, json=json_data)
+                json_data["Flash"] = "master"
+                r = requests.post(self.fw_upgrade_url, json=json_data)
                 if r.status_code != 200 or 'success' not in r.json().get('result'):
                     self.__update_fw_upgrade_logger(
                         "bmc_upgrade", "fail, message=BMC API report error code %d" % r.status_code)
                     self.__update_fw_upgrade_logger(
                         "last_upgrade_result", str(last_fw_upgrade))
                     return False
-                json_data["flash"] = "slave"
+                json_data["Flash"] = "slave"
 
             self.__update_fw_upgrade_logger(
-                "bmc_upgrade", "install BMC as %s mode" % json_data["flash"])
-            r = requests.post(self.bmc_info_url, json=json_data)
+                "bmc_upgrade", "install BMC as %s mode" % json_data["Flash"])
+            r = requests.post(self.fw_upgrade_url, json=json_data)
             if r.status_code == 200 and 'success' in r.json().get('result'):
                 if fw_extra_str == "pingpong":
                     flash = "master" if current_bmc == "slave" else "slave"
@@ -419,7 +430,7 @@ class FwMgrUtil(FwMgrUtilBase):
 
                 filename_w_ext = os.path.basename(fw_path)
                 json_data = dict()
-                json_data["image_path"] = "root@127.0.0.1:/home/root/%s" % filename_w_ext
+                json_data["Path"] = "/home/root/%s" % filename_w_ext
                 json_data["password"] = bmc_pwd
                 json_data["device"] = "cpld"
                 json_data["reboot"] = "no"
@@ -484,7 +495,7 @@ class FwMgrUtil(FwMgrUtilBase):
             child.close
 
             json_data = dict()
-            json_data["data"] = "/usr/bin/ipmitool -b 1 -t 0x2c raw 0x2e 0xdf 0x57 0x01 0x00 0x01"
+            json_data["Command"] = "/usr/bin/ipmitool -b 1 -t 0x2c raw 0x2e 0xdf 0x57 0x01 0x00 0x01"
             r = requests.post(self.bmc_raw_command_url, json=json_data)
             if r.status_code != 200:
                 self.__update_fw_upgrade_logger(
@@ -495,11 +506,9 @@ class FwMgrUtil(FwMgrUtilBase):
 
             filename_w_ext = os.path.basename(fw_path)
             json_data = dict()
-            json_data["image_path"] = "root@127.0.0.1:/home/root/%s" % filename_w_ext
-            json_data["password"] = bmc_pwd
-            json_data["device"] = "bios"
-            json_data["flash"] = flash
-            json_data["reboot"] = "no"
+            json_data["Path"] = "/home/root/%s" % filename_w_ext
+            json_data["Name"] = "bios"
+            json_data["Flash"] = flash
 
             print("Installing...")
             r = requests.post(self.fw_upgrade_url, json=json_data)
@@ -779,29 +788,29 @@ class FwMgrUtil(FwMgrUtilBase):
                     command += sub_command
 
             json_data = dict()
-            json_data["data"] = command
+            json_data["Command"] = command
             r = requests.post(self.bmc_raw_command_url, json=json_data)
             if r.status_code != 200:
                 self.__update_fw_upgrade_logger(
                     "cpld_refresh", "fail, message=%d Invalid refresh image" % r.status_code)
                 return False
-        elif type(cpld_list) is list:
+        elif type(cpld_list) is list and set(cpld_list) <= set(self.cpld_name_list):
             refresh_list = fpga_list + \
                 cpld_list if type(fpga_list) is list else cpld_list
             self.__update_fw_upgrade_logger(
                 "fw_refresh", "start %s refresh" % ",".join(refresh_list))
             json_data = dict()
-            json_data["data"] = "echo cpu_cpld > /tmp/cpld_refresh"
+            json_data["Command"] = "echo cpu_cpld > /tmp/cpld_refresh"
             r = requests.post(self.bmc_raw_command_url, json=json_data)
             if r.status_code != 200:
                 self.__update_fw_upgrade_logger(
                     "cpld_refresh", "fail, message=%d Unable to load new CPLD" % r.status_code)
                 return False
-        elif type(fpga_list) is list:
+        elif type(fpga_list) is list and "FPGA" in fpga_list:
             self.__update_fw_upgrade_logger(
                 "fw_refresh", "start FPGA refresh")
             json_data = dict()
-            json_data["data"] = "echo fpga > /tmp/cpld_refresh"
+            json_data["Command"] = "echo fpga > /tmp/cpld_refresh"
             r = requests.post(self.bmc_raw_command_url, json=json_data)
             if r.status_code != 200:
                 self.__update_fw_upgrade_logger(
@@ -820,21 +829,14 @@ class FwMgrUtil(FwMgrUtilBase):
             Get booting flash of running BMC.
             @return a string, "master" or "slave"
         """
-        json_data = dict()
-        json_data["data"] = "/usr/local/bin/boot_info.sh"
-        r = requests.post(self.bmc_raw_command_url, json=json_data)
-        try:
-            boot_info_list = r.json().get('result')
-            for boot_info_raw in boot_info_list:
-                boot_info = boot_info_raw.split(":")
-                if "Current Boot Code Source" in boot_info[0]:
-                    flash = "master" if "master "in boot_info[1].lower(
-                    ) else "slave"
-                    return flash
-            raise Exception(
-                "Error: Unable to detect booting flash of running BMC")
-        except Exception as e:
-            raise Exception(e)
+        running_bmc = "master"
+        running_bmc_key = "Flash"
+        bmc_info_req = requests.get(self.bmc_info_url, timeout=60)
+        if bmc_info_req.status_code == 200:
+            bmc_info_json = bmc_info_req.json()
+            bmc_info = bmc_info_json.get('data')
+            running_bmc = bmc_info.get(running_bmc_key)
+        return str(running_bmc).lower()
 
     def set_bmc_boot_flash(self, flash):
         """
@@ -844,8 +846,8 @@ class FwMgrUtil(FwMgrUtilBase):
         if flash.lower() not in ["master", "slave"]:
             return False
         json_data = dict()
-        json_data["data"] = "source /usr/local/bin/openbmc-utils.sh;bmc_reboot %s" % flash
-        r = requests.post(self.bmc_raw_command_url, json=json_data)
+        json_data["Flash"] = flash
+        r = requests.post(self.bmc_next_boot, json=json_data)
         if r.status_code != 200:
             return False
         return True
@@ -854,10 +856,13 @@ class FwMgrUtil(FwMgrUtilBase):
         """
             Reboot BMC
         """
-        json_data = dict()
-        json_data["data"] = "source /usr/local/bin/openbmc-utils.sh;bmc_reboot reboot"
-        r = requests.post(self.bmc_raw_command_url, json=json_data)
-        if r.status_code != 200:
+        try:
+            r = requests.post(self.bmc_reboot_url)
+            if r.status_code != 200:
+                return False
+        except Exception as e:
+            if "Connection aborted." in e.message[0]:
+                return True
             return False
         return True
 
@@ -866,17 +871,37 @@ class FwMgrUtil(FwMgrUtilBase):
             # Get booting bios image of current running host OS
             # @return a string, "master" or "slave"
         """
+        bios_boot_info = requests.get(self.bios_boot_info, timeout=60)
+        if bios_boot_info.status_code == 200:
+            bios_boot_info_json = bios_boot_info.json()
+            bios_boot_info_data = bios_boot_info_json.get('data')
+            bios_boot = bios_boot_info_data.get("Flash")
+        return str(bios_boot)
+
+    def get_bios_next_boot(self):
+        """
+            # Get booting bios image of next booting host OS
+            # @return a string, "master" or "slave"
+        """
+        bios_next_boot = "master"
+        bios_next_boot_info = requests.get(self.bios_next_boot, timeout=60)
+        if bios_next_boot_info.status_code == 200:
+            bios_next_boot_info_json = bios_next_boot_info.json()
+            bios_next_boot_info_data = bios_next_boot_info_json.get('data')
+            bios_next_boot = bios_next_boot_info_data.get("Flash")
+        return str(bios_next_boot)
+
+    def set_bios_next_boot(self, flash):
+        """
+            # Set booting bios image of next booting host OS
+            # @return a string, "master" or "slave"
+        """
+        if str(flash).lower() not in ['master', 'slave']:
+            return False
+
         json_data = dict()
-        json_data["data"] = "source /usr/local/bin/openbmc-utils.sh;come_boot_info"
-        r = requests.post(self.bmc_raw_command_url, json=json_data)
-        try:
-            cpu_boot_info_list = r.json().get('result')
-            for cpu_boot_info_raw in cpu_boot_info_list:
-                if "COMe CPU boots from BIOS" in cpu_boot_info_raw:
-                    bios_image = "master" if "master "in cpu_boot_info_raw.lower(
-                    ) else "slave"
-                    return bios_image
-            raise Exception(
-                "Error: Unable to detect current running bios image")
-        except Exception as e:
-            raise Exception(e)
+        json_data["Flash"] = str(flash).lower()
+        r = requests.post(self.bios_next_boot, json=json_data)
+        if r.status_code != 200:
+            return False
+        return True
