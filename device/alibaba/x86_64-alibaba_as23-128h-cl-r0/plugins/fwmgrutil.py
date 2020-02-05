@@ -38,8 +38,9 @@ class FwMgrUtil(FwMgrUtilBase):
         self.cpld_info_url = "http://240.1.1.1:8080/api/firmware/cpldversion"
         self.bmc_raw_command_url = "http://240.1.1.1:8080/api/hw/rawcmd"
         self.fw_upgrade_url = "http://240.1.1.1:8080/api/firmware/upgrade"
+        self.fw_refresh_url = "http://240.1.1.1:8080/api/firmware/refresh"
         self.bios_next_boot = "http://240.1.1.1:8080/api/firmware/biosnextboot"
-        self.bmc_next_boot = "http://240.1.1.1:8080/api/firmware/bmcnextboot"
+        self.bmc_next_boot = "http://240.1.1.1:8080/api/bmc/nextboot"
         self.bmc_reboot_url = "http://240.1.1.1:8080/api/bmc/reboot"
         self.bios_boot_info = "http://240.1.1.1:8080/api/misc/biosbootstatus"
         self.onie_config_file = "/host/machine.conf"
@@ -112,10 +113,10 @@ class FwMgrUtil(FwMgrUtilBase):
         return str(bmc_version)
 
     def upload_file_bmc(self, fw_path):
-        scp_command = 'sudo scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r %s root@240.1.1.1:/home/root/' % os.path.abspath(
+        scp_command = 'sudo scp -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o UserKnownHostsFile=/dev/null -r %s root@240.1.1.1:/home/root/' % os.path.abspath(
             fw_path)
         child = pexpect.spawn(scp_command)
-        i = child.expect(["root@240.1.1.1's password:"], timeout=30)
+        i = child.expect(["root@240.1.1.1's password:"], timeout=60)
         bmc_pwd = self.get_bmc_pass()
         if i == 0 and bmc_pwd:
             child.sendline(bmc_pwd)
@@ -186,7 +187,7 @@ class FwMgrUtil(FwMgrUtilBase):
         bios_version = raw_data_list[0] if len(
             raw_data_list) == 1 else raw_data_list[-2]
 
-        return str(bios_version)
+        return str(bios_version).strip()
 
     def get_onie_version(self):
         """Get ONiE version from SONiC
@@ -236,7 +237,7 @@ class FwMgrUtil(FwMgrUtilBase):
         version = self.__get_register_value(self.fpga_version_path, '0x00')
         if version is not 'None':
             version = "{}.{}".format(
-                int(version[2:][:4], 16), int(version[2:][4:], 16))
+                int(version[2:][1:4], 16), int(version[2:][4:], 16))
         return str(version)
 
     def firmware_upgrade(self, fw_type, fw_path, fw_extra=None):
@@ -257,10 +258,13 @@ class FwMgrUtil(FwMgrUtilBase):
             return False
 
         if fw_type == 'bmc':
+            fw_extra_str = str(fw_extra).lower()
+            if fw_extra_str not in ["master", "slave", "both", "pingpong"]:
+                return False
+
             self.__update_fw_upgrade_logger(
                 "bmc_upgrade", "start BMC upgrade")
             # Copy BMC image file to BMC
-            fw_extra_str = str(fw_extra).lower()
             last_fw_upgrade = ["BMC", fw_path, fw_extra_str, "FAILED"]
             upload_file = self.upload_file_bmc(fw_path)
             if not upload_file:
@@ -272,6 +276,7 @@ class FwMgrUtil(FwMgrUtilBase):
 
             filename_w_ext = os.path.basename(fw_path)
             json_data = dict()
+            json_data["Name"] = "bmc"
             json_data["Path"] = "/home/root/%s" % filename_w_ext
 
             # Set flash type
@@ -289,9 +294,9 @@ class FwMgrUtil(FwMgrUtilBase):
                     "bmc_upgrade", "install BMC as master mode")
                 json_data["Flash"] = "master"
                 r = requests.post(self.fw_upgrade_url, json=json_data)
-                if r.status_code != 200 or 'success' not in r.json().get('result'):
+                if r.status_code != 200 or r.json().get('status') != 'OK':
                     self.__update_fw_upgrade_logger(
-                        "bmc_upgrade", "fail, message=BMC API report error code %d" % r.status_code)
+                        "bmc_upgrade", "fail, message={}".format(r.json().get('messages')))
                     self.__update_fw_upgrade_logger(
                         "last_upgrade_result", str(last_fw_upgrade))
                     return False
@@ -300,7 +305,7 @@ class FwMgrUtil(FwMgrUtilBase):
             self.__update_fw_upgrade_logger(
                 "bmc_upgrade", "install BMC as %s mode" % json_data["Flash"])
             r = requests.post(self.fw_upgrade_url, json=json_data)
-            if r.status_code == 200 and 'success' in r.json().get('result'):
+            if r.status_code == 200 and r.json().get('status') == 'OK':
                 if fw_extra_str == "pingpong":
                     flash = "master" if current_bmc == "slave" else "slave"
                     self.__update_fw_upgrade_logger(
@@ -319,7 +324,7 @@ class FwMgrUtil(FwMgrUtilBase):
                 last_fw_upgrade[3] = "DONE"
             else:
                 self.__update_fw_upgrade_logger(
-                    "bmc_upgrade", "fail, message=unable to install BMC image")
+                    "bmc_upgrade", "fail, message={}".format(r.json().get('messages')))
                 self.__update_fw_upgrade_logger(
                     "last_upgrade_result", str(last_fw_upgrade))
                 return False
@@ -431,17 +436,14 @@ class FwMgrUtil(FwMgrUtilBase):
                 filename_w_ext = os.path.basename(fw_path)
                 json_data = dict()
                 json_data["Path"] = "/home/root/%s" % filename_w_ext
-                json_data["password"] = bmc_pwd
-                json_data["device"] = "cpld"
-                json_data["reboot"] = "no"
-                json_data["type"] = fw_extra_str
+                json_data["Name"] = "cpld"
 
                 # Call BMC api to install cpld image
                 print("Installing...")
                 r = requests.post(self.fw_upgrade_url, json=json_data)
-                if r.status_code != 200 or 'success' not in r.json().get('result'):
+                if r.status_code != 200 or r.json().get('status') != 'OK':
                     self.__update_fw_upgrade_logger(
-                        "cpld_upgrade", "fail, message=invalid cpld image")
+                        "cpld_upgrade", "fail, message={}".format(r.json().get('messages')))
                     continue
 
                 cpld_result_list[i] = "DONE"
@@ -466,6 +468,10 @@ class FwMgrUtil(FwMgrUtilBase):
             return True
 
         elif 'bios' in fw_type:
+            fw_extra_str = str(fw_extra).lower()
+            if fw_extra_str not in ["master", "slave"]:
+                return False
+
             self.__update_fw_upgrade_logger(
                 "bios_upgrade", "start BIOS upgrade")
             last_fw_upgrade = ["BIOS", fw_path, None, "FAILED"]
@@ -511,10 +517,9 @@ class FwMgrUtil(FwMgrUtilBase):
             json_data["Flash"] = flash
 
             print("Installing...")
-            r = requests.post(self.fw_upgrade_url, json=json_data)
-            if r.status_code != 200 or 'success' not in r.json().get('result'):
+            if r.status_code != 200 or r.json().get('status') != 'OK':
                 self.__update_fw_upgrade_logger(
-                    "bios_upgrade", "fail, message=unable install bios")
+                    "bios_upgrade", "fail, message={}".format(r.json().get('messages')))
                 self.__update_fw_upgrade_logger(
                     "last_upgrade_result", str(last_fw_upgrade))
                 return False
@@ -751,77 +756,40 @@ class FwMgrUtil(FwMgrUtilBase):
             self.firmware_refresh(None, ["FAN_CPLD", "LC1_CPLD", "BASE_CPLD"],
                                   "/tmp/fw/fan_refresh.vme:none:/tmp/fw/base_refresh.vme")
         """
+        self.__update_fw_upgrade_logger(
+            "fw_refresh", "start firmware refresh")
 
-        if not fpga_list and not cpld_list:
-            return False
+        cpld_list = [x.lower() for x in cpld_list] if cpld_list else []
+        fpga_list = [x.lower() for x in fpga_list] if fpga_list else []
+        refresh_list = cpld_list + fpga_list
+        fw_path_list = fw_extra.split(
+            ':') if not fpga_list else fw_extra.split(':') + ["none"]
 
-        if type(cpld_list) is list and ("BASE_CPLD" in cpld_list or "FAN_CPLD" in cpld_list):
-            refresh_list = fpga_list + \
-                cpld_list if type(fpga_list) is list else cpld_list
-            self.__update_fw_upgrade_logger(
-                "fw_refresh", "start %s refresh" % ",".join(refresh_list))
-            fw_path_list = fw_extra.split(':')
-            command = "echo "
-            if len(fw_path_list) != len(cpld_list):
-                self.__update_fw_upgrade_logger(
-                    "cpld_refresh", "fail, message=Invalid fw_extra")
-                return False
-
-            for idx in range(0, len(cpld_list)):
-                fw_path = fw_path_list[idx]
-                refresh_type = {
-                    "BASE_CPLD": "base",
-                    "FAN_CPLD": "fan"
-                }.get(cpld_list[idx], None)
-
-                if not refresh_type:
-                    continue
-                elif not self.upload_file_bmc(fw_path):
-                    self.__update_fw_upgrade_logger(
-                        "cpld_refresh", "fail, message=Unable to upload refresh image to BMC")
-                    return False
-                else:
-                    filename_w_ext = os.path.basename(fw_path)
-
-                    sub_command = "%s /home/root/%s > /tmp/cpld_refresh " % (
-                        refresh_type, filename_w_ext)
-                    command += sub_command
-
-            json_data = dict()
-            json_data["Command"] = command
-            r = requests.post(self.bmc_raw_command_url, json=json_data)
-            if r.status_code != 200:
-                self.__update_fw_upgrade_logger(
-                    "cpld_refresh", "fail, message=%d Invalid refresh image" % r.status_code)
-                return False
-        elif type(cpld_list) is list and set(cpld_list) <= set(self.cpld_name_list):
-            refresh_list = fpga_list + \
-                cpld_list if type(fpga_list) is list else cpld_list
-            self.__update_fw_upgrade_logger(
-                "fw_refresh", "start %s refresh" % ",".join(refresh_list))
-            json_data = dict()
-            json_data["Command"] = "echo cpu_cpld > /tmp/cpld_refresh"
-            r = requests.post(self.bmc_raw_command_url, json=json_data)
-            if r.status_code != 200:
-                self.__update_fw_upgrade_logger(
-                    "cpld_refresh", "fail, message=%d Unable to load new CPLD" % r.status_code)
-                return False
-        elif type(fpga_list) is list and "FPGA" in fpga_list:
-            self.__update_fw_upgrade_logger(
-                "fw_refresh", "start FPGA refresh")
-            json_data = dict()
-            json_data["Command"] = "echo fpga > /tmp/cpld_refresh"
-            r = requests.post(self.bmc_raw_command_url, json=json_data)
-            if r.status_code != 200:
-                self.__update_fw_upgrade_logger(
-                    "cpld_refresh", "fail, message=%d Unable to load new FPGA" % r.status_code)
-                return False
-        else:
+        if len(refresh_list) == 0 \
+            or ((len(fpga_list) > 1 and "fpga" not in fpga_list)) \
+                or (len(refresh_list) != len(fw_path_list)):
             self.__update_fw_upgrade_logger(
                 "fw_refresh", "fail, message=Invalid input")
             return False
 
+        for idx in range(0, len(cpld_list)):
+            fw_path = fw_path_list[idx]
+            if cpld_list[idx] in ["fan_cpld", "base_cpld"] and not self.upload_file_bmc(fw_path):
+                self.__update_fw_upgrade_logger(
+                    "cpld_refresh", "fail, message=Unable to upload refresh image to BMC")
+                return False
+
+        json_data = dict()
+        json_data["Paths"] = fw_path_list
+        json_data["Names"] = refresh_list
+        r = requests.post(self.fw_refresh_url, json=json_data)
+        if r.status_code != 200 or r.json().get('status') != 'OK':
+            self.__update_fw_upgrade_logger(
+                "cpld_refreshfw", "fail, message={}".format(r.json().get('messages')))
+            return False
+
         self.__update_fw_upgrade_logger("fw_refresh", "done")
+
         return True
 
     def get_running_bmc(self):
