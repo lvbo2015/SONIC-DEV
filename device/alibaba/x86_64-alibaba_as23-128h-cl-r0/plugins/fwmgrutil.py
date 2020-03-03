@@ -54,6 +54,7 @@ class FwMgrUtil(FwMgrUtilBase):
         self.bmc_pwd_path = "/usr/local/etc/bmcpwd"
         self.cpld_name_list = ["CPU_CPLD",  "COMBO_CPLD",
                                "SW_CPLD1", "SW_CPLD2", "TOP_LC_CPLD", "BOT_LC_CPLD"]
+        self.api_time_out = 300
 
     def __get_register_value(self, path, register):
         cmd = "echo {1} > {0}; cat {0}".format(path, register)
@@ -105,7 +106,7 @@ class FwMgrUtil(FwMgrUtilBase):
         """
         bmc_version = None
         bmc_version_key = "Version"
-        bmc_info_req = requests.get(self.bmc_info_url, timeout=60)
+        bmc_info_req = requests.get(self.bmc_info_url, timeout=self.api_time_out)
         if bmc_info_req.status_code == 200:
             bmc_info_json = bmc_info_req.json()
             bmc_info = bmc_info_json.get('data')
@@ -113,10 +114,10 @@ class FwMgrUtil(FwMgrUtilBase):
         return str(bmc_version)
 
     def upload_file_bmc(self, fw_path):
-        scp_command = 'sudo scp -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o UserKnownHostsFile=/dev/null -r %s root@240.1.1.1:/home/root/' % os.path.abspath(
-            fw_path)
+        scp_command = 'sudo scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r %s root@240.1.1.1:/home/root/' % os.path.abspath(fw_path)
         child = pexpect.spawn(scp_command)
-        i = child.expect(["root@240.1.1.1's password:"], timeout=60)
+        child.timeout=self.api_time_out
+        i = child.expect(["root@240.1.1.1's password:"])
         bmc_pwd = self.get_bmc_pass()
         if i == 0 and bmc_pwd:
             child.sendline(bmc_pwd)
@@ -138,7 +139,7 @@ class FwMgrUtil(FwMgrUtilBase):
         CPLD_3 = self.__get_register_value(self.switchboard_cpld3_path, '0x00')
         CPLD_4 = self.__get_register_value(self.switchboard_cpld4_path, '0x00')
 
-        fan_cpld_key = "FAN_CPLD"
+        fan_cpld_key = "CPLD_FAN"
         fan_cpld = None
         fan_cpld_req = requests.get(self.cpld_info_url)
         if fan_cpld_req.status_code == 200:
@@ -469,46 +470,37 @@ class FwMgrUtil(FwMgrUtilBase):
 
         elif 'bios' in fw_type:
             fw_extra_str = str(fw_extra).lower()
-            if fw_extra_str not in ["master", "slave"]:
+            if fw_extra_str not in ["master", "slave", "both"]:
                 return False
 
             self.__update_fw_upgrade_logger(
                 "bios_upgrade", "start BIOS upgrade")
             last_fw_upgrade = ["BIOS", fw_path, None, "FAILED"]
             fw_extra_str = str(fw_extra).lower()
-            flash = fw_extra_str if fw_extra_str in [
-                "master", "slave"] else "master"
+            flash = fw_extra_str.lower()
 
             if not os.path.exists(fw_path):
                 self.__update_fw_upgrade_logger(
                     "bios_upgrade", "fail, message=image not found")
                 return False
 
-            scp_command = 'sudo scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r %s root@240.1.1.1:/home/root/' % os.path.abspath(
-                fw_path)
-            child = pexpect.spawn(scp_command)
-            i = child.expect(["root@240.1.1.1's password:"], timeout=30)
-            if i != 0:
+            upload_file = self.upload_file_bmc(fw_path)
+            if not upload_file:
                 self.__update_fw_upgrade_logger(
                     "bios_upgrade", "fail, message=unable to upload image to BMC")
                 self.__update_fw_upgrade_logger(
                     "last_upgrade_result", str(last_fw_upgrade))
                 return False
 
-            child.sendline(bmc_pwd)
-            data = child.read()
-            print(data)
-            child.close
-
-            json_data = dict()
-            json_data["Command"] = "/usr/bin/ipmitool -b 1 -t 0x2c raw 0x2e 0xdf 0x57 0x01 0x00 0x01"
-            r = requests.post(self.bmc_raw_command_url, json=json_data)
-            if r.status_code != 200:
-                self.__update_fw_upgrade_logger(
-                    "bios_upgrade", "fail, message=unable to set state")
-                self.__update_fw_upgrade_logger(
-                    "last_upgrade_result", str(last_fw_upgrade))
-                return False
+            # json_data = dict()
+            # json_data["Command"] = "/usr/bin/ipmitool -b 1 -t 0x2c raw 0x2e 0xdf 0x57 0x01 0x00 0x01"
+            # r = requests.post(self.bmc_raw_command_url, json=json_data)
+            # if r.status_code != 200:
+            #     self.__update_fw_upgrade_logger(
+            #         "bios_upgrade", "fail, message=unable to set state")
+            #     self.__update_fw_upgrade_logger(
+            #         "last_upgrade_result", str(last_fw_upgrade))
+            #     return False
 
             filename_w_ext = os.path.basename(fw_path)
             json_data = dict()
@@ -517,7 +509,9 @@ class FwMgrUtil(FwMgrUtilBase):
             json_data["Flash"] = flash
 
             print("Installing...")
+            r = requests.post(self.fw_upgrade_url, json=json_data)
             if r.status_code != 200 or r.json().get('status') != 'OK':
+                print(r.json())
                 self.__update_fw_upgrade_logger(
                     "bios_upgrade", "fail, message={}".format(r.json().get('messages')))
                 self.__update_fw_upgrade_logger(
@@ -799,7 +793,7 @@ class FwMgrUtil(FwMgrUtilBase):
         """
         running_bmc = "master"
         running_bmc_key = "Flash"
-        bmc_info_req = requests.get(self.bmc_info_url, timeout=60)
+        bmc_info_req = requests.get(self.bmc_info_url, timeout=self.api_time_out)
         if bmc_info_req.status_code == 200:
             bmc_info_json = bmc_info_req.json()
             bmc_info = bmc_info_json.get('data')
@@ -839,7 +833,8 @@ class FwMgrUtil(FwMgrUtilBase):
             # Get booting bios image of current running host OS
             # @return a string, "master" or "slave"
         """
-        bios_boot_info = requests.get(self.bios_boot_info, timeout=60)
+        bios_boot_info = requests.get(
+            self.bios_boot_info, timeout=self.api_time_out)
         if bios_boot_info.status_code == 200:
             bios_boot_info_json = bios_boot_info.json()
             bios_boot_info_data = bios_boot_info_json.get('data')
@@ -852,7 +847,8 @@ class FwMgrUtil(FwMgrUtilBase):
             # @return a string, "master" or "slave"
         """
         bios_next_boot = "master"
-        bios_next_boot_info = requests.get(self.bios_next_boot, timeout=60)
+        bios_next_boot_info = requests.get(
+            self.bios_next_boot, timeout=self.api_time_out)
         if bios_next_boot_info.status_code == 200:
             bios_next_boot_info_json = bios_next_boot_info.json()
             bios_next_boot_info_data = bios_next_boot_info_json.get('data')
