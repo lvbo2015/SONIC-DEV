@@ -106,7 +106,8 @@ class FwMgrUtil(FwMgrUtilBase):
         """
         bmc_version = None
         bmc_version_key = "Version"
-        bmc_info_req = requests.get(self.bmc_info_url, timeout=self.api_time_out)
+        bmc_info_req = requests.get(
+            self.bmc_info_url, timeout=self.api_time_out)
         if bmc_info_req.status_code == 200:
             bmc_info_json = bmc_info_req.json()
             bmc_info = bmc_info_json.get('data')
@@ -114,9 +115,10 @@ class FwMgrUtil(FwMgrUtilBase):
         return str(bmc_version)
 
     def upload_file_bmc(self, fw_path):
-        scp_command = 'sudo scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r %s root@240.1.1.1:/home/root/' % os.path.abspath(fw_path)
+        scp_command = 'sudo scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r %s root@240.1.1.1:/home/root/' % os.path.abspath(
+            fw_path)
         child = pexpect.spawn(scp_command)
-        child.timeout=self.api_time_out
+        child.timeout = self.api_time_out
         i = child.expect(["root@240.1.1.1's password:"])
         bmc_pwd = self.get_bmc_pass()
         if i == 0 and bmc_pwd:
@@ -146,8 +148,6 @@ class FwMgrUtil(FwMgrUtilBase):
             fancpld_info_json = fan_cpld_req.json()
             fancpld_info_data = fancpld_info_json.get('data')
             fan_cpld = fancpld_info_data.get(fan_cpld_key)
-            print(fan_cpld)
-            print(fancpld_info_json)
 
         CPLD_B = 'None' if CPLD_B is 'None' else "{}.{}".format(
             int(CPLD_B[2], 16), int(CPLD_B[3], 16))
@@ -171,8 +171,6 @@ class FwMgrUtil(FwMgrUtilBase):
         cpld_version_dict.update({'CPLD_3': CPLD_3})
         cpld_version_dict.update({'CPLD_4': CPLD_4})
         cpld_version_dict.update({'CPLD_FAN': FAN_CPLD})
-        print(cpld_version_dict.keys())
-        print(cpld_version_dict.keys().sort())
 
         return cpld_version_dict
 
@@ -515,7 +513,6 @@ class FwMgrUtil(FwMgrUtilBase):
             print("Installing...")
             r = requests.post(self.fw_upgrade_url, json=json_data)
             if r.status_code != 200 or r.json().get('status') != 'OK':
-                print(r.json())
                 self.__update_fw_upgrade_logger(
                     "bios_upgrade", "fail, message={}".format(r.json().get('messages')))
                 self.__update_fw_upgrade_logger(
@@ -760,25 +757,25 @@ class FwMgrUtil(FwMgrUtilBase):
         cpld_list = [x.lower() for x in cpld_list] if cpld_list else []
         fpga_list = [x.lower() for x in fpga_list] if fpga_list else []
         refresh_list = cpld_list + fpga_list
-        fw_path_list = fw_extra.split(
-            ':') if not fpga_list else fw_extra.split(':') + ["none"]
+        fw_path_list = str(fw_extra).split(':')
+        refresh_img_list = ["none" for i in range(len(refresh_list))]
 
-        if len(refresh_list) == 0 \
-            or ((len(fpga_list) > 1 and "fpga" not in fpga_list)) \
-                or (len(refresh_list) != len(fw_path_list)):
+        if len(refresh_list) == 0 :
             self.__update_fw_upgrade_logger(
                 "fw_refresh", "fail, message=Invalid input")
             return False
 
-        for idx in range(0, len(cpld_list)):
-            fw_path = fw_path_list[idx]
-            if cpld_list[idx] in ["fan_cpld", "base_cpld"] and not self.upload_file_bmc(fw_path):
-                self.__update_fw_upgrade_logger(
-                    "cpld_refresh", "fail, message=Unable to upload refresh image to BMC")
-                return False
+        for idx in range(0, len(refresh_list)):
+            if refresh_list[idx] in ["fan_cpld", "base_cpld"]:
+                if not self.upload_file_bmc(fw_path_list[idx]):
+                    self.__update_fw_upgrade_logger(
+                        "cpld_refresh", "fail, message=Unable to upload refresh image to BMC")
+                    return False
+                refresh_img_list[idx] = "/home/root/%s" % os.path.basename(
+                    fw_path_list[idx])
 
         json_data = dict()
-        json_data["Paths"] = fw_path_list
+        json_data["Paths"] = refresh_img_list
         json_data["Names"] = refresh_list
         r = requests.post(self.fw_refresh_url, json=json_data)
         if r.status_code != 200 or r.json().get('status') != 'OK':
@@ -797,7 +794,8 @@ class FwMgrUtil(FwMgrUtilBase):
         """
         running_bmc = "master"
         running_bmc_key = "Flash"
-        bmc_info_req = requests.get(self.bmc_info_url, timeout=self.api_time_out)
+        bmc_info_req = requests.get(
+            self.bmc_info_url, timeout=self.api_time_out)
         if bmc_info_req.status_code == 200:
             bmc_info_json = bmc_info_req.json()
             bmc_info = bmc_info_json.get('data')
