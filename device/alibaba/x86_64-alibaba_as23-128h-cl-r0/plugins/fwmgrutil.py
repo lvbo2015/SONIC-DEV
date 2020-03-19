@@ -7,7 +7,7 @@
 
 __author__ = 'Wirut G.<wgetbumr@celestica.com>'
 __license__ = "GPL"
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __status__ = "Development"
 
 import subprocess
@@ -314,16 +314,9 @@ class FwMgrUtil(FwMgrUtilBase):
                     self.__update_fw_upgrade_logger(
                         "bmc_upgrade", "switch to boot from %s" % flash)
                     self.set_bmc_boot_flash(flash)
-                    self.__update_fw_upgrade_logger(
-                        "bmc_upgrade", "reboot BMC")
-                    if not self.reboot_bmc():
-                        return False
-                else:
-                    self.__update_fw_upgrade_logger(
-                        "bmc_upgrade", "reboot BMC")
-                    reboot_dict = {}
-                    reboot_dict["reboot"] = "yes"
-                    r = requests.post(self.bmc_info_url, json=reboot_dict)
+                self.__update_fw_upgrade_logger("bmc_upgrade", "reboot BMC")
+                if not self.reboot_bmc():
+                    return False
                 last_fw_upgrade[3] = "DONE"
             else:
                 self.__update_fw_upgrade_logger(
@@ -754,8 +747,8 @@ class FwMgrUtil(FwMgrUtilBase):
         self.__update_fw_upgrade_logger(
             "fw_refresh", "start firmware refresh")
 
-        cpld_list = [x.lower() for x in cpld_list] if cpld_list else []
-        fpga_list = [x.lower() for x in fpga_list] if fpga_list else []
+        cpld_list = [x.upper() for x in cpld_list] if cpld_list else []
+        fpga_list = [x.upper() for x in fpga_list] if fpga_list else []
         refresh_list = cpld_list + fpga_list
         fw_path_list = str(fw_extra).split(':')
         refresh_img_list = ["none" for i in range(len(refresh_list))]
@@ -766,7 +759,7 @@ class FwMgrUtil(FwMgrUtilBase):
             return False
 
         for idx in range(0, len(refresh_list)):
-            if refresh_list[idx] in ["fan_cpld", "base_cpld"]:
+            if refresh_list[idx] in ["FAN_CPLD", "BASE_CPLD"]:
                 if not self.upload_file_bmc(fw_path_list[idx]):
                     self.__update_fw_upgrade_logger(
                         "cpld_refresh", "fail, message=Unable to upload refresh image to BMC")
