@@ -1,206 +1,115 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
-__author__ = 'Wirut G.<wgetbumr@celestica.com>'
-__license__ = "GPL"
-__version__ = "0.2.0"
-__status__ = "Development"
+###############################################################################
+#
+### Sensor utility.
+#
+### Copyright (C) Alibaba, INC.
+#
+#################################################################################
+
 
 import requests
+import json
 
 
 class SensorUtil():
-    """Platform-specific SensorUtil class"""
+    BMC_REQ_BASE_URI = "http://240.1.1.1:8080/api"
 
     def __init__(self):
-        self.sensor_info_url = "http://240.1.1.1:8080/api/sensor/info"
-        self.all_sensor_dict = None
+        self.sensor_info_uri = "/".join([self.BMC_REQ_BASE_URI, "sensor/info"])
+        self.sensor_info = None
 
-    def request_data(self, url):
-        try:
-            r = requests.get(url)
-            data = r.json()
-        except Exception as e:
-            return {}
-        return data
+    def _get_sensor_info(self):
+        resp = requests.get(self.sensor_info_uri)
+        if not resp:
+            return False
 
-    def input_type_selector(self, unit):
-        # Set input type.
-        return {
-            "C": "temperature",
-            "V": "voltage",
-            "RPM": "RPM",
-            "A": "amp",
-            "W": "power"
-        }.get(unit, unit)
+        sensor_json = resp.json()
+        if not sensor_json or not "data" in sensor_json:
+            return False
 
-    def input_name_selector(self, raw_sensor_name):
+        self.sensor_info = sensor_json["data"]
 
-        sensor_name_list = raw_sensor_name.split('_')
-        sensor_name = sensor_name_list[0]
-        input_name = '_'.join(sensor_name_list[1:])
+        return True
 
-        if sensor_name_list[0] in ["TOP", "BOTTOM"]:
-            sensor_name = '_'.join(sensor_name_list[0:2])
-            input_name = '_'.join(sensor_name_list[2:])
+    def get_sys_airflow(self):
+        sys_air_flow = "Unknown"
 
-        return str(sensor_name).upper(), str(input_name).upper()
+        sys_pn = sys_pn_data[0][1]
+        if "R1240-F0001" in sys_pn:
+            sys_air_flow = "FTOB"
+        elif"R1240-F0002" in sys_pn:
+            sys_air_flow = "BTOF"
+
+        return sys_air_flow
+
+    def _get_type(self, unit_str):
+        unit2type = {"C": "temperature", "A": "amp", "V": "voltage",
+                     "RPM": "RPM", "W": "power"}
+
+        if unit_str in unit2type:
+            return unit2type[unit_str]
+        return None
 
     def get_num_sensors(self):
-        """
-            Get the number of sensors
-            :return: int num_sensors
-        """
-
-        all_sensor_dict = self.get_all()
-
-        return len(all_sensor_dict)
-
-    def get_sensor_input_num(self, index):
-        """
-            Get the number of the input items of the specified sensor
-            :return: int input_num
-        """
-
-        all_sensor_dict = self.get_all()
-        ss_keys = all_sensor_dict.keys()[index]
-        sensor_info = all_sensor_dict.get(ss_keys, {})
-        ss_if_keys = sensor_info.keys()
-
-        return len(ss_if_keys)
-
-    def get_sensor_name(self, index):
-        """
-            Get the device name of the specified sensor.
-            for example "coretemp-isa-0000"
-            :return: str sensor_name
-        """
-        all_sensor_dict = self.get_all()
-        sensor_name = all_sensor_dict.keys()[index]
-
-        return sensor_name
-
-    def get_sensor_input_name(self, sensor_index, input_index):
-        """
-            Get the input item name of the specified input item of the
-            specified sensor index, for example "Physical id 0"
-            :return: str sensor_input_name
-        """
-
-        all_sensor_dict = self.get_all()
-
-        ss_keys = all_sensor_dict.keys()[sensor_index]
-        sensor_info = all_sensor_dict.get(ss_keys, {})
-        ss_if_keys = sensor_info.keys()[input_index]
-
-        return ss_if_keys
-
-    def get_sensor_input_type(self, sensor_index, input_index):
-        """
-            Get the item type of the specified input item of the specified sensor index,
-            The return value should among  "valtage","temperature"
-            :return: str sensor_input_type
-        """
-
-        all_sensor_dict = self.get_all()
-
-        ss_keys = all_sensor_dict.keys()[sensor_index]
-        sensor_info = all_sensor_dict.get(ss_keys, {})
-
-        ss_if_keys = sensor_info.keys()[input_index]
-        sensor_input_info = sensor_info.get(ss_if_keys, {})
-
-        sensor_input_type = sensor_input_info.get('Type', "N/A")
-        return sensor_input_type
-
-    def get_sensor_input_value(self, sensor_index, input_index):
-        """
-            Get the current value of the input item, the unit is "V" or "C"
-            :return: float sensor_input_value
-        """
-
-        all_sensor_dict = self.get_all()
-
-        ss_keys = all_sensor_dict.keys()[sensor_index]
-        sensor_info = all_sensor_dict.get(ss_keys, {})
-
-        ss_if_keys = sensor_info.keys()[input_index]
-        sensor_input_info = sensor_info.get(ss_if_keys, {})
-
-        sensor_input_value = sensor_input_info.get('Value', 0.0)
-        return sensor_input_value
-
-    def get_sensor_input_low_threshold(self, sensor_index, input_index):
-        """
-            Get the low threshold of the value,
-            the status of this item is not ok if the current value<low_threshold
-            :return: float sensor_input_low_threshold
-        """
-
-        all_sensor_dict = self.get_all()
-
-        ss_keys = all_sensor_dict.keys()[sensor_index]
-        sensor_info = all_sensor_dict.get(ss_keys, {})
-
-        ss_if_keys = sensor_info.keys()[input_index]
-        sensor_input_info = sensor_info.get(ss_if_keys, {})
-
-        sensor_input_low_threshold = sensor_input_info.get('LowThd', 0.0)
-        return sensor_input_low_threshold
-
-    def get_sensor_input_high_threshold(self, sensor_index, input_index):
-        """
-            Get the high threshold of the value,
-            the status of this item is not ok if the current value > high_threshold
-            :return: float sensor_input_high_threshold
-        """
-        all_sensor_dict = self.get_all()
-
-        ss_keys = all_sensor_dict.keys()[sensor_index]
-        sensor_info = all_sensor_dict.get(ss_keys, {})
-
-        ss_if_keys = sensor_info.keys()[input_index]
-        sensor_input_info = sensor_info.get(ss_if_keys, {})
-
-        sensor_input_high_threshold = sensor_input_info.get('HighThd', 0.0)
-        return sensor_input_high_threshold
+        sensor_dict = self.get_all()
+        sum = 0
+        for sensor_name, sensor_obj in sensor_dict.items():
+            if cmp(sensor_name, 'Number') == 0:
+                continue
+            sum += len(sensor_obj.keys())
+        return sum
 
     def get_all(self):
-        """
-            Get all information of system sensors, returns JSON objects in python 'DICT'.
-            SensorName1, SensorName2, ... optional, string
-            SensorInput1, SensorInput2, ... optional, string
-            Type, mandatory in SensorInput$INDEX, should be on of { "temperature", "voltage", "power", "amp", "RPM" }
-            Value, mandatory in SensorInput$INDEX, float , real value
-            LowThd, mandatory in SensorInput$INDEX, float , lower bound of value
-            HighThd, mandatory in SensorInput$INDEX, float , upper bound of value
-            Return python 'dict' objects, example:
-        """
+        sensor_info = {}
 
-        if not self.all_sensor_dict:
-            all_sensor_dict = dict()
+        if not self._get_sensor_info():
+            return sensor_info
 
-            sensor_info_req = self.request_data(self.sensor_info_url)
-            sensor_info_data = sensor_info_req.get('data', {})
+        sname_temp_cl = ["Cpu", "Inlet", "Switch"]
+        sname_temp_rj = ["CPU_TEMP", "INLET_TEMP", "SWITCH_TEMP"]
+        for si_name, si_val in self.sensor_info.items():
+            if si_name.startswith("PSU"):
+                sname = si_name.split("_")[0]
+                if si_name.find("Temperature") != -1:
+                    new_si_name = "%s_TEMP" % sname
+                    si_name = new_si_name
+            elif si_name in sname_temp_cl:
+                sname = "TEMPERATURE"
+                new_si_name = "%s_temp" % si_name
+                si_name = new_si_name.upper()
+            elif si_name in sname_temp_rj:
+                sname = "TEMPERATURE"
+            elif si_name.startswith("CPU"):
+                sname = "CPU"
+            elif si_name.startswith("FAN"):
+                sname = "FAN"
+            elif si_name.startswith("Switch") or \
+                 si_name.startswith("SWITCH") or \
+                 si_name.find("_LC_") != -1:
+                sname = "SWITCH"
+            elif si_name.startswith("SYS") or \
+                 si_name.startswith("Baseboard"):
+                sname = "SYSTEM"
+            else:
+                sname = "OTHER"
 
-            for raw_ss_name, sensor_info in sensor_info_data.items():
+            si_info = {}
+            si_info["LowThd"] = si_val["Min"]
+            si_info["HighThd"] = si_val["Max"]
+            si_info["Value"] = si_val["Value"]
+            type = self._get_type(si_val["Unit"])
+            if not type:
+                continue
+            si_info["Type"] = type
 
-                sensor_name, input_name = self.input_name_selector(raw_ss_name)
-                sensor_dict = all_sensor_dict.get(sensor_name, {})
-                new_sensor_dict = dict()
-                new_sensor_dict["Type"] = self.input_type_selector(
-                    sensor_info.get('Unit', 'N/A'))
-                new_sensor_dict["Value"] = float(sensor_info.get('Value', 0.0))
-                new_sensor_dict["HighThd"] = float(sensor_info.get('Max', 0.0))
-                new_sensor_dict["LowThd"] = float(sensor_info.get('Min', 0.0))
+            if sname not in sensor_info:
+                sensor_info[sname] = {}
 
-                if sensor_dict == {}:
-                    all_sensor_dict[sensor_name] = dict()
+            sensor_info[sname][si_name] = si_info
 
-                input_name = input_name if input_name != '' else new_sensor_dict["Type"].upper(
-                )
-                sensor_dict[input_name] = new_sensor_dict
-                all_sensor_dict[sensor_name].update(sensor_dict)
+        #j = json.dumps(self.sensor_info, sort_keys=True, indent=4, separators=(',', ': '))
+        #print j
 
-            self.all_sensor_dict = all_sensor_dict
-
-        return self.all_sensor_dict
+        return sensor_info

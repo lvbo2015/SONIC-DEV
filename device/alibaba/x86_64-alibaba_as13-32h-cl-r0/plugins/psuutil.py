@@ -1,47 +1,63 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
-__author__ = 'Wirut G.<wgetbumr@celestica.com>'
-__license__ = "GPL"
-__version__ = "0.2.0"
-__status__ = "Development"
+###############################################################################
+#
+## PSU utility.
+#
+## Copyright (C) Alibaba, INC.
+#
+################################################################################
 
 import requests
 import re
+import json
 
 try:
     from sonic_psu.psu_base import PsuBase
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
-NUM_PSU = 2
-
 
 class PsuUtil(PsuBase):
-    """Platform-specific PSUutil class"""
+    BMC_REQ_BASE_URI = "http://240.1.1.1:8080/api"
 
     def __init__(self):
         PsuBase.__init__(self)
+        self.psu_info_uri = "/".join([self.BMC_REQ_BASE_URI, "psu/info"])
+        self.psu_num_uri = "/".join([self.BMC_REQ_BASE_URI, "psu/number"])
 
-        self.psu_info_url = "http://240.1.1.1:8080/api/psu/info"
-        self.all_psu_dict = None
+    def _get_psu_info(self):
+        resp = requests.get(self.psu_info_uri)
+        if not resp:
+            return False
 
-    def request_data(self, url):
-        try:
-            r = requests.get(url)
-            data = r.json()
-        except Exception as e:
-            return {}
-        return data
+        psu_json = resp.json()
+        if not psu_json or not "data" in psu_json:
+            return False
+
+        self.psu_info = psu_json["data"]
+
+        return True
 
     def get_num_psus(self):
         """
         Retrieves the number of PSUs available on the device
         :return: An integer, the number of PSUs available on the device
         """
+        resp = requests.get(self.psu_num_uri)
+        if not resp:
+            return -1
 
-        all_psu_dict = self.get_all()
+        psu_nr_json = resp.json()
+        if not psu_nr_json or "data" not in psu_nr_json:
+            return -1
 
-        return all_psu_dict.get('Number', NUM_PSU)
+        try:
+            nr_psu = psu_nr_json["data"]["Number"]
+        except Exception as e:
+            nr_psu = -1
+
+        return nr_psu
 
     def get_psu_status(self, index):
         """
@@ -51,11 +67,28 @@ class PsuUtil(PsuBase):
         :return: Boolean, True if PSU is operating properly, False if PSU is faulty
         """
 
-        all_psu_dict = self.get_all()
-        psu_key = 'PSU{}'.format(index)
-        psu_info = all_psu_dict.get(psu_key, {})
+        # init data
+        psu_key = "PSU" + str(index)
+        psu_status_key = "Power Status"
+        psu_power_status = False
 
-        return psu_info.get('PowerStatus', False)
+        try:
+            # Request and validate sensor's information
+            self.fru_status_list, self.psu_info_list = self.request_data()
+
+            # Get PSU power status.
+            for fru_status in self.fru_status_list:
+                is_psu = fru_status.get(psu_key)
+                psu_status = str(fru_status.get(psu_status_key)).strip()
+
+                if is_psu is not None and psu_status == "OK":
+                    psu_power_status = True
+
+        except:
+            print("Error: Unable to access PSU power status")
+            return False
+
+        return psu_power_status
 
     def get_psu_presence(self, index):
         """
@@ -64,11 +97,29 @@ class PsuUtil(PsuBase):
         :param index: An integer, 1-based index of the PSU of which to query status
         :return: Boolean, True if PSU is plugged, False if not
         """
-        all_psu_dict = self.get_all()
-        psu_key = 'PSU{}'.format(index)
-        psu_info = all_psu_dict.get(psu_key, {})
 
-        return psu_info.get('Present', False)
+        # Init data
+        psu_key = "PSU" + str(index)
+        psu_presence_key = "Present"
+        psu_presence_status = False
+
+        try:
+            # Request and validate sensor's information.
+            self.fru_status_list, self.psu_info_list = self.request_data()
+
+            # Get PSU present status.
+            for fru_status in self.fru_status_list:
+                is_psu = fru_status.get(psu_key)
+                psu_status = str(fru_status.get(psu_presence_key)).strip()
+
+                if is_psu is not None and psu_status == "Present":
+                    psu_presence_status = True
+
+        except:
+            print("Error: Unable to access PSU presence status")
+            return False
+
+        return psu_presence_status
 
     def get_psu_sn(self, index):
         """
@@ -77,12 +128,25 @@ class PsuUtil(PsuBase):
         :param index: An integer, 1-based index of the PSU.
         :return: Serial number
         """
+        serial_number = "N/A"
+        psu_key = "PSU" + str(index) + " FRU"
+        psu_sn_key = "Serial Number"
 
-        all_psu_dict = self.get_all()
-        psu_key = 'PSU{}'.format(index)
-        psu_info = all_psu_dict.get(psu_key, {})
+        try:
+            # Request and validate sensor's information.
+            self.fru_status_list, self.psu_info_list = self.request_data()
 
-        return psu_info.get('SN', False)
+            # Get PSU fru info.
+            for psu_fru in self.psu_info_list:
+                psu_sn = str(psu_fru.get(psu_sn_key)).strip()
+                if psu_fru.get(psu_key) is not None:
+                    serial_number = psu_sn if psu_sn.strip() != "" else "N/A"
+                    break
+
+        except:
+            return "N/A"
+
+        return serial_number
 
     def get_psu_pn(self, index):
         """
@@ -91,12 +155,25 @@ class PsuUtil(PsuBase):
         :param index: An integer, 1-based index of the PSU.
         :return: Product name
         """
+        product_name = "N/A"
+        psu_key = "PSU" + str(index) + " FRU"
+        psu_pn_key = "Product Name"
 
-        all_psu_dict = self.get_all()
-        psu_key = 'PSU{}'.format(index)
-        psu_info = all_psu_dict.get(psu_key, {})
-        
-        return psu_info.get('PN', False)
+        try:
+            # Request and validate sensor's information
+            self.fru_status_list, self.psu_info_list = self.request_data()
+
+            # Get PSU fru info.
+            for psu_fru in self.psu_info_list:
+                psu_pn = str(psu_fru.get(psu_pn_key)).strip()
+                if psu_fru.get(psu_key) is not None:
+                    product_name = psu_pn if psu_pn.strip() != "" else "N/A"
+                    break
+
+        except:
+            return "N/A"
+
+        return product_name
 
     def get_all(self):
         """
@@ -107,35 +184,131 @@ class PsuUtil(PsuBase):
             PN, conditional, if PRESENT is True, PN of the PSU, string
             SN, conditional, if PRESENT is True, SN of the PSU, string
         """
+#{
+#    "Number": 4,
+#    "PSU1": {
+#        "AirFlow": "N/A",
+#        "FanSpeed": {
+#            "Max": 30000,
+#            "Min": 1000,
+#            "Unit": "RPM",
+#            "Value": -99999
+#        },
+#        "Inputs": {
+#            "Current": {
+#                "HighAlarm": 7.0,
+#                "LowAlarm": 0.0,
+#                "Unit": "A",
+#                "Value": -99999.0
+#            },
+#            "Power": {
+#                "HighAlarm": 1220.0,
+#                "LowAlarm": -1,
+#                "Unit": "W",
+#                "Value": -99999.0
+#            },
+#            "Status": false,
+#            "Type": "Unknown",
+#            "Voltage": {
+#                "HighAlarm": 264.0,
+#                "LowAlarm": 90.0,
+#                "Unit": "V",
+#                "Value": -99999.0
+#            }
+#        },
+#        "Outputs": {
+#            "Current": {
+#                "HighAlarm": 90.0,
+#                "LowAlarm": 0.0,
+#                "Unit": "A",
+#                "Value": -99999.0
+#            },
+#            "Power": {
+#                "HighAlarm": 1100.0,
+#                "LowAlarm": -1,
+#                "Unit": "W",
+#                "Value": -99999.0
+#            },
+#            "Status": false,
+#            "Type": "Unknown",
+#            "Voltage": {
+#                "HighAlarm": 13.2,
+#                "LowAlarm": 10.8,
+#                "Unit": "V",
+#                "Value": -99999.0
+#            }
+#        },
+#        "PN": "",
+#        "SN": "JHZD1849000585",
+#        "Temperature": {
+#            "Max": 70.0,
+#            "Min": 60.0,
+#            "Unit": "C",
+#            "Value": -99999.0
+#        }
+#    }
+#}
+        psu_info = {}
+        if not self._get_psu_info():
+            return psu_info
 
-        if not self.all_psu_dict:
-            all_psu_dict = dict()
+        #j = json.dumps(self.psu_info, sort_keys=True, indent=4, separators=(',', ': '))
+        #print j
 
-            psu_info_req = self.request_data(self.psu_info_url)
-            psu_info_data = psu_info_req.get('data', {})
-            all_psu_dict["Number"] = psu_info_data.get('Number', NUM_PSU)
+        if "Number" not in self.psu_info:
+            return psu_info
 
-            for psu_idx in range(1, all_psu_dict["Number"] + 1):
-                psu_key = 'PSU{}'.format(str(psu_idx))
-                psu_info = psu_info_data.get(psu_key, {})
-                psu_input_info = psu_info.get('Inputs', {})
-                psu_output_info = psu_info.get('Outputs', {})
+        psu_nr = self.psu_info["Number"]
+        psu_info["Number"] = psu_nr
+        for idx in range(1, psu_nr+1):
+            psu_name = "PSU%d" % idx
+            if not psu_name in self.psu_info:
+                print("%s not in self.psu_info" % psu_name)
+                continue
 
-                psu_info_dict = dict()
-                psu_info_dict["InputType"] = psu_input_info.get("Type", "N/A")
-                psu_info_dict["InputStatus"] = True if psu_input_info.get(
-                    "Status") else False
-                psu_info_dict["OutputStatus"] = True if psu_output_info.get(
-                    "Status") else False
-                psu_info_dict["PowerStatus"] = (
-                    psu_info_dict["InputStatus"] and psu_info_dict["OutputStatus"])
-                psu_info_dict["PN"] = psu_info.get("PN", "N/A")
-                psu_info_dict["SN"] = psu_info.get("SN", "N/A")
-                psu_info_dict["Present"] = True if psu_info.get("Present") == 'yes' else False
-                psu_info_dict["AirFlow"] = psu_info.get("AirFlow", "N/A")
+            pi = self.psu_info[psu_name]
+            pinfo = {}
+            try:
+                pinfo["Present"] = True if pi["Present"] == "yes" else False
+                pinfo["AirFlow"] = pi["AirFlow"]
+                pinfo["PN"] = pi["PN"]
+                pinfo["SN"] = pi["SN"]
+            except Exception as e:
+                print("%s not in self.psu_info, exception 1" % psu_name)
+                continue
 
-                all_psu_dict[psu_key] = psu_info_dict
+            if "Inputs" in pi:
+                pii = pi["Inputs"]
+                if "Status" in pii:
+                    try:
+                        pinfo["InputStatus"] = pii["Status"]
+                        pinfo["InputType"] = pii["Type"]
+                    except Exception as e:
+                        pinfo["InputType"] = "N/AA"
 
-            self.all_psu_dict = all_psu_dict
+            if "Outputs" in pi:
+                pio = pi["Outputs"]
+                if "Status" in pio:
+                    try:
+                        pinfo["OutputStatus"] = pio["Status"]
+                    except Exception as e:
+                        pinfo["OutputStatus"] = False
 
-        return self.all_psu_dict
+            if "FanSpeed" in pi:
+                pif = pi["FanSpeed"]
+                try:
+                    pinfo["Speed"] = pif["Value"]
+                    pinfo["LowThd"] = pif["Min"]
+                    pinfo["HighThd"] = pif["Max"]
+                except Exception as e:
+                    pinfo["Speed"] = 0
+                    pinfo["LowThd"] = 0
+                    pinfo["HighThd"] = 0
+
+            psu_info[psu_name] = pinfo
+
+        #j = json.dumps(psu_info, sort_keys=True, indent=4, separators=(',', ': '))
+        #print j
+
+        return psu_info
+

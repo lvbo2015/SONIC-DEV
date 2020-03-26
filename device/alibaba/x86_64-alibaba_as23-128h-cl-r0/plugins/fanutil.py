@@ -1,117 +1,51 @@
-#!/usr/bin/env python
-
-__author__ = 'Wirut G.<wgetbumr@celestica.com>'
-__license__ = "GPL"
-__version__ = "0.2.0"
-__status__ = "Development"
+#!/usr/bin/python
 
 import requests
 import re
-
-NUM_FAN_TRAY = 5
-NUM_ROTER = 2
+import json
 
 
 class FanUtil():
-    """Platform-specific FanUtil class"""
+    BMC_REQ_BASE_URI = "http://240.1.1.1:8080/api"
+    ROTOR_PER_FAN = 2
 
     def __init__(self):
-        self.fan_info_url = "http://240.1.1.1:8080/api/fan/info"
-        self.all_fan_dict = None
+        self.fan_info_uri = "/".join([self.BMC_REQ_BASE_URI, "fan/info"])
+        self.fan_num_uri = "/".join([self.BMC_REQ_BASE_URI, "fan/number"])
 
-    def request_data(self, url):
-        try:
-            r = requests.get(url)
-            data = r.json()
-        except Exception as e:
-            return {}
-        return data
+    def _get_fan_info(self):
+        resp = requests.get(self.fan_info_uri)
+        if not resp:
+            return False
+
+        fan_json = resp.json()
+        if not fan_json or not "data" in fan_json:
+            return False
+
+        self.fan_info = fan_json["data"]
+
+        return True
 
     def get_num_fans(self):
-        """   
-            Get the number of fans
-            :return: int num_fans
         """
-        all_fan_dict = self.get_all()
-        num_fan_tray = all_fan_dict.get('Number', NUM_FAN_TRAY)
+        Get total fan number
 
-        return num_fan_tray * NUM_ROTER
-
-    def get_fan_speed(self, fan_name):
+        @return number of fan, -1 for failure
         """
-            Get the current speed of the fan, the unit is "RPM"  
-            :return: int fan_speed
-        """
+        resp = requests.get(self.fan_num_uri)
+        if not resp:
+            return -1
 
-        all_fan_dict = self.get_all()
-        fan_info = all_fan_dict.get(fan_name, {})
+        fan_nr_json = resp.json()
+        if not fan_nr_json or "data" not in fan_nr_json:
+            return -1
 
-        return fan_info.get('Speed', 0)
+        try:
+            nr_fan = fan_nr_json["data"]["Number"]
+        except Exception as e:
+            nr_fan = -1
 
-    def get_fan_low_threshold(self, fan_name):
-        """
-            Get the low speed threshold of the fan.
-            if the current speed < low speed threshold, 
-            the status of the fan is not ok.
-            :return: int fan_low_threshold
-        """
-
-        all_fan_dict = self.get_all()
-        fan_info = all_fan_dict.get(fan_name, {})
-
-        return fan_info.get('LowThd', 0)
-
-    def get_fan_high_threshold(self, fan_name):
-        """
-            Get the hight speed threshold of the fan, 
-            if the current speed > high speed threshold, 
-            the status of the fan is not ok
-            :return: int fan_high_threshold 
-        """
-        all_fan_dict = self.get_all()
-        fan_info = all_fan_dict.get(fan_name, {})
-
-        return fan_info.get('HighThd', 0)
-
-    def get_fan_pn(self, fan_name):
-        """
-            Get the product name of the fan
-            :return: str fan_pn
-        """
-
-        all_fan_dict = self.get_all()
-        fan_info = all_fan_dict.get(fan_name, {})
-
-        return fan_info.get('PN', 'N/A')
-
-    def get_fan_sn(self, fan_name):
-        """
-            Get the serial number of the fan
-            :return: str fan_sn
-        """
-        all_fan_dict = self.get_all()
-        fan_info = all_fan_dict.get(fan_name, {})
-
-        return fan_info.get('SN', 'N/A')
-
-    def get_fans_name_list(self):
-        """
-            Get list of fan name.
-            :return: list fan_names
-        """
-        fan_names = []
-
-        # Get the number of fans
-        n_fan = self.get_num_fans()
-
-        # Set fan name and add to the list.
-        for x in range(1, n_fan + 1):
-            f_index = int(round(float(x)/2))
-            pos = 1 if x % 2 else 2
-            fan_name = 'FAN{}_{}'.format(f_index, pos)
-            fan_names.append(fan_name)
-
-        return fan_names
+        return nr_fan
 
     def get_all(self):
         """
@@ -126,41 +60,55 @@ class FanUtil():
             PN, conditional, if PRESENT is True, PN of the FAN, string
             SN, conditional, if PRESENT is True, SN of the FAN, string)
         """
+        fan_info = {}
+        if not self._get_fan_info():
+            return fan_info
 
-        if not self.all_fan_dict:
-            all_fan_dict = dict()
+        if "Number" not in self.fan_info:
+            return fan_info
 
-            fan_info_req = self.request_data(self.fan_info_url)
-            fan_info_data = fan_info_req.get('data', {})
-            all_fan_dict["Number"] = fan_info_data.get('Number', NUM_FAN_TRAY)
+        fan_nr = self.fan_info["Number"]
+        for fan_idx in range(1, fan_nr+1):
+            fan_name = "FAN%d" % fan_idx
+            if not fan_name in self.fan_info:
+                print("%s not in self.fan_info" % fan_name)
+                continue
+            fi = self.fan_info[fan_name]
+            if "Rotors" not in fi:
+                print("Rotors not in fi")
+                continue
+            rotor_nr = fi["Rotors"]
+            for ridx in range(1, rotor_nr+1):
+                sub_name = "%s_%d" % (fan_name, ridx)
+                rname = "Rotor%d" % ridx
+                sub_fan_info = {}
+                if rname not in fi:
+                    print("%s not in fi" % rname)
+                    continue
+                try:
+                    sub_fan_info["Present"] = True if fi["Present"] == "yes" else False
+                    sub_fan_info["Running"] = fi[rname]["Running"]
+                    sub_fan_info["Speed"] = fi[rname]["Speed"]
+                    sub_fan_info["LowThd"] = fi[rname]["SpeedMin"]
+                    sub_fan_info["HighThd"] = fi[rname]["SpeedMax"]
+                    sub_fan_info["PN"] = fi["PN"]
+                    sub_fan_info["SN"] = fi["SN"]
+                    sub_fan_info["AirFlow"] = fi["AirFlow"]
+                    if (fi[rname]["HwAlarm"] == "no") and \
+                        (sub_fan_info["Speed"] != None and sub_fan_info["LowThd"] != None and sub_fan_info["Speed"] >= sub_fan_info["LowThd"]) and \
+                        (sub_fan_info["Speed"] != None and sub_fan_info["HighThd"] != None and sub_fan_info["Speed"] <= sub_fan_info["HighThd"]):
+                        sub_fan_info["Status"] = True
+                    else:
+                        sub_fan_info["Status"] = False
 
-            for fan_idx in range(1, all_fan_dict["Number"] + 1):
-                num_of_roter = fan_info_data.get('Rotors', NUM_ROTER)
+                    fan_info[sub_name] = sub_fan_info
+                except Exception as e:
+                    print("GOT EXCEPTON: %s" % str(e))
+                    continue
+        fan_info["Number"] = fan_nr * self.ROTOR_PER_FAN
 
-                for fan_pos in range(1, num_of_roter + 1):
-                    fan_key = 'FAN{}'.format(str(fan_idx))
-                    roter_key = 'Rotor{}'.format(str(fan_pos))
+        #j = json.dumps(fan_info, sort_keys=True, indent=4, separators=(',', ': '))
+        #print j
 
-                    fan_info = fan_info_data.get(fan_key, {})
-                    roter_info = fan_info.get(roter_key, {})
+        return fan_info
 
-                    fan_info_dict = dict()
-                    fan_info_dict["Present"] = True if fan_info.get(
-                        "Present") == 'yes' else False
-                    fan_info_dict["Speed"] = roter_info.get("Speed", "N/A")
-                    fan_info_dict["Running"] = True if roter_info.get(
-                        "Running") == 'yes' else False
-                    fan_info_dict["HighThd"] = roter_info.get(
-                        "SpeedMax", "N/A")
-                    fan_info_dict["LowThd"] = roter_info.get("SpeedMin", "N/A")
-                    fan_info_dict["Status"] = False if roter_info.get(
-                        "HwAlarm") == 'yes' else True
-                    fan_info_dict["PN"] = fan_info.get("PN", "N/A")
-                    fan_info_dict["SN"] = fan_info.get("SN", "N/A")
-                    fan_info_dict["AirFlow"] = fan_info.get("AirFlow", "N/A")
-
-                    fan_name = '{}_{}'.format(fan_key, fan_pos)
-                    all_fan_dict[fan_name] = fan_info_dict
-                    self.all_fan_dict = all_fan_dict
-
-        return self.all_fan_dict
