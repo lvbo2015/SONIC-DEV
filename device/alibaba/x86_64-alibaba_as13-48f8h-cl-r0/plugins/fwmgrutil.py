@@ -27,8 +27,10 @@ class FwMgrUtil(FwMgrUtilBase):
         self.bmc_info_uri = "/".join([self.BMC_REQ_BASE_URI, "bmc/info"])
         self.bmc_nextboot_uri = "/".join([self.BMC_REQ_BASE_URI, "bmc/nextboot"])
         self.bmc_reboot_uri = "/".join([self.BMC_REQ_BASE_URI, "bmc/reboot"])
+        self.bios_nextboot_uri = "/".join([self.BMC_REQ_BASE_URI, "firmware/biosnextboot"])
         self.fw_upgrade_uri = "/".join([self.BMC_REQ_BASE_URI, "firmware/upgrade"])
         self.fw_refresh_uri = "/".join([self.BMC_REQ_BASE_URI, "firmware/refresh"])
+        self.bios_boot_uri = "/".join([self.BMC_REQ_BASE_URI, "misc/biosbootstatus"])
 
         self.fw_upgrade_logger_path = "/var/log/fw_upgrade.log"
 
@@ -163,7 +165,11 @@ class FwMgrUtil(FwMgrUtilBase):
         return data["Flash"]
 
     def post_to_bmc(self, uri, data):
-        resp = requests.post(uri, json=data)
+        try:
+            resp = requests.post(uri, json=data)
+        except:
+            resp = False
+
         if not resp:
             print "No response"
             return False
@@ -183,7 +189,8 @@ class FwMgrUtil(FwMgrUtilBase):
                       % os.path.abspath(fw_path)
         print scp_command
         child = pexpect.spawn(scp_command)
-        i = child.expect(["root@240.1.1.1's password:"], timeout=30)
+        child.timeout = 300
+        i = child.expect(["root@240.1.1.1's password:"])
         bmc_pwd = self.get_bmc_pass()
         if i == 0 and bmc_pwd:
             child.sendline(bmc_pwd)
@@ -322,7 +329,7 @@ class FwMgrUtil(FwMgrUtilBase):
                 return False
 
             # Change boot flash if required
-            if current_bmc != flash:
+            if current_bmc != flash and flash != "both":
                 # Set desired boot flash
                 print("Current BMC boot flash %s, user requested %s" % (current_bmc, flash))
                 json_data = {}
@@ -620,7 +627,8 @@ class FwMgrUtil(FwMgrUtilBase):
                 fw_names.append(name)
 
         if fw_extra:
-            for fpath in fw_extra:
+            img_list = fw_extra.split(":")
+            for fpath in img_list:
                 if fpath == "none":
                     continue
 
@@ -649,12 +657,14 @@ class FwMgrUtil(FwMgrUtilBase):
             Set booting flash of BMC
             @param flash should be "master" or "slave"
         """
-        if flash.lower() not in ["master", "slave"]:
+        flash = str(flash).lower()
+
+        if flash not in ["master", "slave"]:
             return False
-        json_data = dict()
-        json_data["data"] = "source /usr/local/bin/openbmc-utils.sh;bmc_reboot %s" % flash
-        r = requests.post(self.bmc_raw_command_url, json=json_data)
-        if r.status_code != 200:
+
+        json_data = {}
+        json_data["Flash"] = flash
+        if not self.post_to_bmc(self.bmc_nextboot_uri, json_data):
             return False
         return True
 
@@ -662,10 +672,7 @@ class FwMgrUtil(FwMgrUtilBase):
         """
             Reboot BMC
         """
-        json_data = dict()
-        json_data["data"] = "source /usr/local/bin/openbmc-utils.sh;bmc_reboot reboot"
-        r = requests.post(self.bmc_raw_command_url, json=json_data)
-        if r.status_code != 200:
+        if not self.post_to_bmc(self.bmc_reboot_uri, {}):
             return False
         return True
 
@@ -674,17 +681,49 @@ class FwMgrUtil(FwMgrUtilBase):
             # Get booting bios image of current running host OS
             # @return a string, "master" or "slave"
         """
-        json_data = dict()
-        json_data["data"] = "source /usr/local/bin/openbmc-utils.sh;come_boot_info"
-        r = requests.post(self.bmc_raw_command_url, json=json_data)
-        try:
-            cpu_boot_info_list = r.json().get('result')
-            for cpu_boot_info_raw in cpu_boot_info_list:
-                if "COMe CPU boots from BIOS" in cpu_boot_info_raw:
-                    bios_image = "master" if "master "in cpu_boot_info_raw.lower(
-                    ) else "slave"
-                    return bios_image
-            raise Exception(
-                "Error: Unable to detect current running bios image")
-        except Exception as e:
-            raise Exception(e)
+        bios_ver = "N/A"
+        data = self.get_from_bmc(self.bmc_info_uri)
+        if not data or "Flash" not in data:
+            return bios_ver
+
+        return data["Flash"]
+
+    def get_running_bmc(self):
+        """
+            Get booting flash of running BMC.
+            @return a string, "master" or "slave"
+        """
+        flash = "N/A"
+        data = self.get_from_bmc(self.bmc_info_uri)
+        if not data or "Flash" not in data:
+            return flash
+
+        return data["Flash"]
+
+    def get_bios_next_boot(self):
+        """
+            # Get booting bios image of next booting host OS
+            # @return a string, "master" or "slave"
+        """
+        flash = "N/A"
+        data = self.get_from_bmc(self.bios_nextboot_uri)
+        if not data or "Flash" not in data:
+            return flash
+
+        return data["Flash"]
+
+    def set_bios_next_boot(self, flash):
+        """
+            # Set booting bios image of next booting host OS
+            # @return a string, "master" or "slave"
+        """
+        flash = str(flash).lower()
+
+        if flash not in ['master', 'slave']:
+            return False
+
+        json_data = {}
+        json_data["Flash"] = flash
+        if not self.post_to_bmc(self.bios_nextboot_uri, json_data):
+            return False
+        return True
