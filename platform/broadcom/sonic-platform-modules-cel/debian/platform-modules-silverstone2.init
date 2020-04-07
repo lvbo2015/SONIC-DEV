@@ -25,7 +25,7 @@ start)
         modprobe xcvr-cls
         modprobe switch_cpld
 
-        # Instantiate TLV EEPROM device on I801 bus 
+        # Instantiate TLV EEPROM device on I801 bus
         devname=`cat /sys/bus/i2c/devices/i2c-0/name`
         if [[ $devname == 'SMBus I801 adapter at '* ]]; then
                 echo 24lc64t 0x56 > /sys/bus/i2c/devices/i2c-0/new_device
@@ -44,7 +44,7 @@ start)
                 echo optoe2 0x50 > /sys/bus/i2c/devices/i2c-$i/new_device
         done
         # use optoe3 for QSFP-DD.
-        for i in {13..44}
+        for i in {15..46}
         do
                 echo optoe3 0x50 > /sys/bus/i2c/devices/i2c-$i/new_device
         done
