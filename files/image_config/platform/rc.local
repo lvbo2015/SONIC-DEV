@@ -88,8 +88,28 @@ update_mgmt_interface_macaddr() {
     sed -i "/eth0/ s/ATTR{address}==\"$old_mac\"/ATTR{address}==\"$new_mac\"/g" /etc/udev/rules.d/70-persistent-net.rules
 }
 
+boot_action() {
+    #cleanos
+    CLEAN_OS_FILE="/etc/sonic/cleanos"
+    if [ -f $CLEAN_OS_FILE ]; then
+        echo "clean up os"
+        sonic_installer cleanup -y
+        rm -f $CLEAN_OS_FILE
+    fi
+
+    decode-syseeprom --init
+
+    #diag install
+    if [ ! -d /usr/local/CPU_Diag ];then
+        echo "Diag install"
+        sleep 200
+        dpkg -i /home/Ali_Diag_V2.0.4.deb
+    fi
+}
+
 firsttime_exit() {
     rm -rf $FIRST_BOOT_FILE
+    boot_action
     exit 0
 }
 
@@ -354,4 +374,5 @@ if [ -f $FIRST_BOOT_FILE ]; then
     firsttime_exit
 fi
 
+boot_action
 exit 0
