@@ -11,14 +11,14 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update &&   \
     apt-get install -y  \
         python-pip      \
-        libpython2.7    \
         ipmitool        \
         librrd8         \
         librrd-dev      \
         rrdtool         \
         python-smbus    \
         ethtool         \
-        dmidecode
+        dmidecode &&    \
+    pip install enum34
 
 {% if docker_platform_monitor_debs.strip() -%}
 # Copy locally-built Debian package dependencies

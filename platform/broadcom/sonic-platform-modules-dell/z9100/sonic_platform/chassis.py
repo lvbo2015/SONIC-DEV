@@ -73,6 +73,7 @@ class Chassis(ChassisBase):
     power_reason_dict[44] = ChassisBase.REBOOT_CAUSE_INSUFFICIENT_FAN_SPEED
 
     def __init__(self):
+        ChassisBase.__init__(self)
         PORT_START = 0
         PORT_END = 31
         PORTS_IN_BLOCK = (PORT_END + 1)
@@ -92,7 +93,6 @@ class Chassis(ChassisBase):
                            self.PORT_I2C_MAPPING[index][1])
             self._sfp_list.append(sfp_node)
 
-        ChassisBase.__init__(self)
         # Initialize EEPROM
         self._eeprom = Eeprom()
         for i in range(MAX_Z9100_FANTRAY):
@@ -162,6 +162,28 @@ class Chassis(ChassisBase):
             string: Serial number of chassis
         """
         return self._eeprom.serial_str()
+    
+    def get_sfp(self, index):
+        """
+        Retrieves sfp represented by (1-based) index <index>
+
+        Args:
+            index: An integer, the index (1-based) of the sfp to retrieve.
+                   The index should be the sequence of a physical port in a chassis,
+                   starting from 1.
+                   For example, 0 for Ethernet0, 1 for Ethernet4 and so on.
+
+        Returns:
+            An object dervied from SfpBase representing the specified sfp
+        """
+        sfp = None
+
+        try:
+            sfp = self._sfp_list[index-1]
+        except IndexError:
+            sys.stderr.write("SFP index {} out of range (1-{})\n".format(
+                             index, len(self._sfp_list)-1))
+        return sfp
 
     def get_status(self):
         """

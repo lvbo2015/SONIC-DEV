@@ -25,17 +25,22 @@ LED_PATH = "/var/run/hw-management/led/"
 # fan_dir isn't supported on Spectrum 1. It is supported on Spectrum 2 and later switches
 FAN_DIR = "/var/run/hw-management/system/fan_dir"
 
+# SKUs with unplugable FANs:
+# 1. don't have fanX_status and should be treated as always present
+hwsku_dict_with_unplugable_fan = ['ACS-MSN2010', 'ACS-MSN2100']
+
 class Fan(FanBase):
     """Platform-specific Fan class"""
 
     STATUS_LED_COLOR_ORANGE = "orange"
 
-    def __init__(self, has_fan_dir, fan_index, drawer_index = 1, psu_fan = False):
+    def __init__(self, has_fan_dir, fan_index, drawer_index = 1, psu_fan = False, sku = None):
         # API index is starting from 0, Mellanox platform index is starting from 1
         self.index = fan_index + 1
         self.drawer_index = drawer_index + 1
 
         self.is_psu_fan = psu_fan
+        self.always_presence = False if sku not in hwsku_dict_with_unplugable_fan else True
 
         self.fan_min_speed_path = "fan{}_min".format(self.index)
         if not self.is_psu_fan:
@@ -43,10 +48,12 @@ class Fan(FanBase):
             self.fan_speed_set_path = "fan{}_speed_set".format(self.index)
             self.fan_presence_path = "fan{}_status".format(self.drawer_index)
             self.fan_max_speed_path = "fan{}_max".format(self.index)
+            self._name = "fan{}".format(fan_index + 1)
         else:
             self.fan_speed_get_path = "psu{}_fan1_speed_get".format(self.index)
             self.fan_presence_path = "psu{}_fan1_speed_get".format(self.index)
-            self.fan_max_speed_path = "psu{}_max".format(self.index)
+            self._name = 'psu_{}_fan_{}'.format(self.index, 1)
+            self.fan_max_speed_path = None
         self.fan_status_path = "fan{}_fault".format(self.index)
         self.fan_green_led_path = "led_fan{}_green".format(self.drawer_index)
         self.fan_red_led_path = "led_fan{}_red".format(self.drawer_index)
@@ -78,13 +85,13 @@ class Fan(FanBase):
                 1 stands for forward, in other words intake
                 0 stands for reverse, in other words exhaust
         """
-        if not self.fan_dir or self.is_psu_fan:
+        if not self.fan_dir or self.is_psu_fan or not self.get_presence():
             return self.FAN_DIRECTION_NOT_APPLICABLE
 
         try:
             with open(os.path.join(self.fan_dir), 'r') as fan_dir:
                 fan_dir_bits = int(fan_dir.read())
-                fan_mask = 1 << self.index - 1
+                fan_mask = 1 << self.drawer_index - 1
                 if fan_dir_bits & fan_mask:
                     return self.FAN_DIRECTION_INTAKE
                 else:
@@ -92,6 +99,9 @@ class Fan(FanBase):
         except (ValueError, IOError) as e:
             raise RuntimeError("Failed to read fan direction status to {}".format(repr(e)))
 
+
+    def get_name(self):
+        return self._name
 
     def get_status(self):
         """
@@ -102,15 +112,15 @@ class Fan(FanBase):
         """
         status = 0
         if self.is_psu_fan:
-            status = 1
+            status = 0
         else:
             try:
                 with open(os.path.join(FAN_PATH, self.fan_status_path), 'r') as fault_status:
                     status = int(fault_status.read())
             except (ValueError, IOError):
-                status = 0
+                status = 1
 
-        return status == 1
+        return status == 0
 
 
     def get_presence(self):
@@ -127,11 +137,14 @@ class Fan(FanBase):
             else:
                 status = 0
         else:
-            try:
-                with open(os.path.join(FAN_PATH, self.fan_presence_path), 'r') as presence_status:
-                    status = int(presence_status.read())
-            except (ValueError, IOError):
-                status = 0
+            if self.always_presence:
+                status = 1
+            else:
+                try:
+                    with open(os.path.join(FAN_PATH, self.fan_presence_path), 'r') as presence_status:
+                        status = int(presence_status.read())
+                except (ValueError, IOError):
+                    status = 0
 
         return status == 1
 
@@ -171,9 +184,15 @@ class Fan(FanBase):
                 speed_in_rpm = int(fan_curr_speed.read())
         except (ValueError, IOError):
             speed_in_rpm = 0
-        
+
+        if self.fan_max_speed_path is None:
+            # in case of max speed unsupported, we just return speed in unit of RPM.
+            return speed_in_rpm
+
         max_speed_in_rpm = self._get_max_speed_in_rpm()
         speed = 100*speed_in_rpm/max_speed_in_rpm
+        if speed > 100:
+            speed = 100
 
         return speed
 
@@ -185,11 +204,10 @@ class Fan(FanBase):
         Returns:
             int: percentage of the max fan speed
         """
-        speed = 0
-
         if self.is_psu_fan:
             # Not like system fan, psu fan speed can not be modified, so target speed is N/A 
-            return speed
+            return self.get_speed()
+
         try:
             with open(os.path.join(FAN_PATH, self.fan_speed_set_path), 'r') as fan_pwm:
                 pwm = int(fan_pwm.read())

@@ -17,9 +17,9 @@ init_devnum() {
 # Attach/Detach syseeprom on CPU board
 sys_eeprom() {
     case $1 in
-        "new_device")    echo 24c16 0x50 > /sys/bus/i2c/devices/i2c-0/$1
+        "new_device")    echo 24c16 0x50 > /sys/bus/i2c/devices/i2c-${devnum}/$1
                          ;;
-        "delete_device") echo 0x50 > /sys/bus/i2c/devices/i2c-0/$1
+        "delete_device") echo 0x50 > /sys/bus/i2c/devices/i2c-${devnum}/$1
                          ;;
         *)               echo "z9264f_platform: sys_eeprom : invalid command !"
                          ;;
@@ -125,6 +125,77 @@ init_switch_port_led() {
     fi
 }
 
+install_python_api_package() {
+    device="/usr/share/sonic/device"
+    platform=$(/usr/local/bin/sonic-cfggen -H -v DEVICE_METADATA.localhost.platform)
+
+    rv=$(pip install $device/$platform/sonic_platform-1.0-py2-none-any.whl)
+}
+
+remove_python_api_package() {
+    rv=$(pip show sonic-platform > /dev/null 2>/dev/null)
+    if [ $? -eq 0 ]; then
+        rv=$(pip uninstall -y sonic-platform > /dev/null 2>/dev/null)
+    fi
+}
+
+# Readout firmware version of the system and
+# store in /var/log/firmware_versions
+platform_firmware_versions()
+{
+    FIRMWARE_VERSION_FILE=/var/log/firmware_versions
+    rm -rf ${FIRMWARE_VERSION_FILE}
+    echo "BIOS: `dmidecode -s system-version `" > $FIRMWARE_VERSION_FILE
+
+    ## Get FPGA version
+    r=`/usr/bin/pcisysfs.py  --get --offset 0x00 --res /sys/bus/pci/devices/0000\:04\:00.0/resource0 | sed  '1d; s/.*\(....\)$/\1/; s/\(..\{1\}\)/\1./'`
+    r_min=$(echo $r | sed 's/.*\(..\)$/0x\1/')
+    r_maj=$(echo $r | sed 's/^\(..\).*/0x\1/')
+    echo "FPGA: $((r_maj)).$((r_min))" >> $FIRMWARE_VERSION_FILE
+
+    ## Get BMC Firmware Revision
+    r=`cat /sys/class/ipmi/ipmi0/device/bmc/firmware_revision`
+    echo "BMC: $r" >> $FIRMWARE_VERSION_FILE
+
+    #System CPLD 0x31 on i2c bus 601 ( physical FPGA I2C-2)
+    r_min=`/usr/sbin/i2cget -y 601 0x31 0x0 | sed ' s/.*\(0x..\)$/\1/'`
+    r_maj=`/usr/sbin/i2cget -y 601 0x31 0x1 | sed ' s/.*\(0x..\)$/\1/'`
+    echo "System CPLD: $((r_maj)).$((r_min))" >> $FIRMWARE_VERSION_FILE
+
+    #Slave CPLD 1 0x30 on i2c bus 600 ( physical FPGA I2C-1)
+    r_min=`/usr/sbin/i2cget -y 600 0x30 0x0 | sed ' s/.*\(0x..\)$/\1/'`
+    r_maj=`/usr/sbin/i2cget -y 600 0x30 0x1 | sed ' s/.*\(0x..\)$/\1/'`
+    echo "Slave CPLD 1: $((r_maj)).$((r_min))" >> $FIRMWARE_VERSION_FILE
+
+    #Slave CPLD 2 0x31 on i2c bus 600 ( physical FPGA I2C-1)
+    r_min=`/usr/sbin/i2cget -y 600 0x31 0x0 | sed ' s/.*\(0x..\)$/\1/'`
+    r_maj=`/usr/sbin/i2cget -y 600 0x31 0x1 | sed ' s/.*\(0x..\)$/\1/'`
+    echo "Slave CPLD 2: $((r_maj)).$((r_min))" >> $FIRMWARE_VERSION_FILE
+
+    #Slave CPLD 3 0x32 on i2c bus 600 ( physical FPGA I2C-1)
+    r_min=`/usr/sbin/i2cget -y 600 0x32 0x0 | sed ' s/.*\(0x..\)$/\1/'`
+    r_maj=`/usr/sbin/i2cget -y 600 0x32 0x1 | sed ' s/.*\(0x..\)$/\1/'`
+    echo "Slave CPLD 3: $((r_maj)).$((r_min))" >> $FIRMWARE_VERSION_FILE
+
+    #Slave CPLD 4 0x33 on i2c bus 600 ( physical FPGA I2C-1)
+    r_min=`/usr/sbin/i2cget -y 600 0x33 0x0 | sed ' s/.*\(0x..\)$/\1/'`
+    r_maj=`/usr/sbin/i2cget -y 600 0x33 0x1 | sed ' s/.*\(0x..\)$/\1/'`
+    echo "Slave CPLD 4: $((r_maj)).$((r_min))" >> $FIRMWARE_VERSION_FILE
+}
+
+get_reboot_cause() {
+    REBOOT_REASON_FILE="/host/reboot-cause/platform/reboot_reason"
+    resource="/sys/bus/pci/devices/0000:04:00.0/resource0"
+
+    # Handle First Boot into software version with reboot cause determination support
+    if [[ ! -e $REBOOT_REASON_FILE ]]; then
+        echo "0" > $REBOOT_REASON_FILE
+    else
+        /usr/bin/pcisysfs.py --get --offset 0x18 --res $resource | sed '1d; s/.*:\(.*\)$/\1/;' > $REBOOT_REASON_FILE
+    fi
+    /usr/bin/pcisysfs.py --set --val 0x0 --offset 0x18 --res $resource
+}
+
 init_devnum
 
 if [ "$1" == "init" ]; then
@@ -135,12 +206,16 @@ if [ "$1" == "init" ]; then
     modprobe i2c_ocores
     modprobe dell_z9264f_fpga_ocores
     sys_eeprom "new_device"
+    get_reboot_cause
     switch_board_qsfp_mux "new_device"
     switch_board_qsfp "new_device"
     switch_board_sfp "new_device"
     switch_board_modsel
     init_switch_port_led
-    python /usr/bin/qsfp_irq_enable.py
+    install_python_api_package
+    python /usr/bin/port_irq_enable.py
+    platform_firmware_versions
+
 
 elif [ "$1" == "deinit" ]; then
     sys_eeprom "delete_device"
@@ -149,6 +224,7 @@ elif [ "$1" == "deinit" ]; then
     switch_board_sfp "delete_device"
     modprobe -r i2c-mux-pca954x
     modprobe -r i2c-dev
+    remove_python_api_package
 else
      echo "z9264f_platform : Invalid option !"
 fi

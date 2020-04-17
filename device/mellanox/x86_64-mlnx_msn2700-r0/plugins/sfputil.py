@@ -22,8 +22,6 @@ SFP_MODULE_THRESHOLD_WIDTH = 56
 SFP_I2C_PAGE_SIZE = 256
 
 # parameters for DB connection 
-REDIS_HOSTNAME = "localhost"
-REDIS_PORT = 6379
 REDIS_TIMEOUT_USECS = 0
 
 # parameters for SFP presence
@@ -43,7 +41,7 @@ SFP_PORT_NAME_CONVENTION = "sfp{}"
 
 # magic code defnition for port number, qsfp port position of each hwsku
 # port_position_tuple = (PORT_START, QSFP_PORT_START, PORT_END, PORT_IN_BLOCK, EEPROM_OFFSET)
-hwsku_dict = {'ACS-MSN2700': 0, 'Mellanox-SN2700': 0, 'Mellanox-SN2700-D48C8': 0, "LS-SN2700":0, 'ACS-MSN2740': 0, 'ACS-MSN2100': 1, 'ACS-MSN2410': 2, 'ACS-MSN2010': 3, 'ACS-MSN3700': 0, 'ACS-MSN3700C': 0, 'ACS-MSN3800': 4}
+hwsku_dict = {'ACS-MSN2700': 0, 'Mellanox-SN2700': 0, 'Mellanox-SN2700-D48C8': 0, 'LS-SN2700': 0, 'ACS-MSN2740': 0, 'ACS-MSN2100': 1, 'ACS-MSN2410': 2, 'ACS-MSN2010': 3, 'ACS-MSN3700': 0, 'ACS-MSN3700C': 0, 'ACS-MSN3800': 4, 'Mellanox-SN3800-D112C8': 4, 'ACS-MSN4700': 0}
 port_position_tuple_list = [(0, 0, 31, 32, 1), (0, 0, 15, 16, 1), (0, 48, 55, 56, 1), (0, 18, 21, 22, 1), (0, 0, 63, 64, 1)]
 
 def log_info(msg, also_print_to_console=False):
@@ -190,10 +188,9 @@ class SfpUtil(SfpUtilBase):
 
         if self.db_sel == None:
             from swsscommon import swsscommon
-            self.state_db = swsscommon.DBConnector(swsscommon.STATE_DB,
-                                             REDIS_HOSTNAME,
-                                             REDIS_PORT,
-                                             REDIS_TIMEOUT_USECS)
+            self.state_db = swsscommon.DBConnector("STATE_DB",
+                                                   REDIS_TIMEOUT_USECS,
+                                                   True)
 
             # Subscribe to state table for SFP change notifications
             self.db_sel = swsscommon.Select()

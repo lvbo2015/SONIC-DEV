@@ -16,7 +16,13 @@ SONIC_STRETCH_DOCKERS += $(DOCKER_RESTAPI)
 SONIC_INSTALL_DOCKER_IMAGES += $(DOCKER_RESTAPI)
 endif
 
-$(DOCKER_RESTAPI)_CONTAINER_NAME = rest-api
+$(DOCKER_RESTAPI)_CONTAINER_NAME = restapi
 $(DOCKER_RESTAPI)_RUN_OPT += --cap-add NET_ADMIN --privileged -t
+$(DOCKER_RESTAPI)_RUN_OPT += --network="host"
 $(DOCKER_RESTAPI)_RUN_OPT += -v /var/run/redis/redis.sock:/var/run/redis/redis.sock
+$(DOCKER_RESTAPI)_RUN_OPT += -v /etc/sonic/certificates:/etc/sonic/certificates:ro
+$(DOCKER_RESTAPI)_RUN_OPT += -p=8081:8081/tcp
 $(DOCKER_RESTAPI)_RUN_OPT += -p=8090:8090/tcp
+
+$(DOCKER_RESTAPI)_FILES += $(SUPERVISOR_PROC_EXIT_LISTENER_SCRIPT)
+$(DOCKER_RESTAPI)_BASE_IMAGE_FILES += monit_restapi:/etc/monit/conf.d

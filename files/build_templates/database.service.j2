@@ -1,14 +1,1 @@
-[Unit]
-Description=Database container
-Requires=docker.service
-After=docker.service
-After=rc-local.service
-
-[Service]
-User=root
-ExecStartPre=/usr/bin/{{docker_container_name}}.sh start
-ExecStart=/usr/bin/{{docker_container_name}}.sh wait
-ExecStop=/usr/bin/{{docker_container_name}}.sh stop
-
-[Install]
-WantedBy=multi-user.target
+per_namespace/database.service.j2

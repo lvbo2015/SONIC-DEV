@@ -16,6 +16,10 @@ SONIC_CONFIG_BUILD_JOBS = 1
 # Corresponding -j argument will be passed to make/dpkg commands that build separate packages
 SONIC_CONFIG_MAKE_JOBS = $(shell nproc)
 
+# DEFAULT_BUILD_LOG_TIMESTAMP - add timestamp in build log
+# Supported format: simple, none
+DEFAULT_BUILD_LOG_TIMESTAMP = none
+
 # SONIC_USE_DOCKER_BUILDKIT - use docker buildkit for build.
 # If set to y SONiC build system will set environment variable DOCKER_BUILDKIT=1
 # to enable docker buildkit.
@@ -96,8 +100,24 @@ DEFAULT_KERNEL_PROCURE_METHOD = build
 FRR_USER_UID = 300
 FRR_USER_GID = 300
 
+# DPKG cache allows the .deb files to be stored in the cache path. This allows the submodules
+# package to be cached and restored back if its commit hash is not modified and its dependencies are not modified.
+# SONIC_DPKG_CACHE_METHOD - Default method of deb package caching
+#	none    :  no caching
+#	rwcache :  Use cache if exists else build the source and update the cache
+#	wcache  :  Dont use the cache and just build the source and update the cache
+#	rcache  :  Use cache if exists, but dont update the cache
+#	cache   :  Same as rwcache
+# SONIC_DPKG_CACHE_SOURCE - Stores the cache location details
+SONIC_DPKG_CACHE_METHOD ?= none
+SONIC_DPKG_CACHE_SOURCE ?= /var/cache/sonic/artifacts
+
 # Default VS build memory preparation
 DEFAULT_VS_PREPARE_MEM = yes
+
+
+# ENABLE_ICCPD - build docker-iccpd for mclag support
+ENABLE_ICCPD = y
 
 # ENABLE_SYSTEM_SFLOW - build docker-sonic-sflow for sFlow support
 ENABLE_SFLOW = y
@@ -107,3 +127,21 @@ ENABLE_MGMT_FRAMEWORK = y
 
 # ENABLE_RESTAPI - build docker-sonic-restapi for configuring the switch using REST APIs
 ENABLE_RESTAPI = n
+
+# ENABLE_NAT - build docker-sonic-nat for nat support
+ENABLE_NAT = y
+
+# INSTALL_KUBERNETES - if set to y kubernetes packages are installed to be able to
+# run as worker node in kubernetes cluster.
+INSTALL_KUBERNETES = n
+
+# KUBERNETES_VERSION - Set to the required version.
+# K8s_GCR_IO_PAUSE_VERSION - Version of k8s universal pause container image
+# K8s_CNI_CALICO_VERSION - Calico used as CNI; Appropriate version for this Kubernetes version
+# These are Used *only* when INSTALL_KUBERNETES=y
+# NOTE: As a worker node it has to run version compatible to kubernetes master.
+#
+KUBERNETES_VERSION = 1.18.0
+K8s_GCR_IO_PAUSE_VERSION = 3.2
+K8s_CNI_CALICO_VERSION = 3.12.0
+

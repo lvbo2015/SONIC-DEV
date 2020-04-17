@@ -14,12 +14,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install required packages
 RUN apt-get update   && \
     apt-get install -y  \
-        libdbus-1-3     \
-        libdaemon0      \
-        libjansson4     \
         libc-ares2      \
         iproute2        \
-        libpython2.7    \
         libjson-c3      \
         logrotate       \
         libunwind8
@@ -50,6 +46,8 @@ COPY ["snmp.conf", "/etc/snmp/frr.conf"]
 COPY ["TSA", "/usr/bin/TSA"]
 COPY ["TSB", "/usr/bin/TSB"]
 COPY ["TSC", "/usr/bin/TSC"]
+COPY ["files/supervisor-proc-exit-listener", "/usr/bin"]
+COPY ["critical_processes", "/etc/supervisor"]
 RUN chmod a+x /usr/bin/TSA && \
     chmod a+x /usr/bin/TSB && \
     chmod a+x /usr/bin/TSC

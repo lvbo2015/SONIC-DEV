@@ -36,28 +36,36 @@ THERMAL_DEV_BOARD_AMBIENT = "board_amb"
 
 THERMAL_API_GET_TEMPERATURE = "get_temperature"
 THERMAL_API_GET_HIGH_THRESHOLD = "get_high_threshold"
+THERMAL_API_GET_HIGH_CRITICAL_THRESHOLD = "get_high_critical_threshold"
+
+THERMAL_API_INVALID_HIGH_THRESHOLD = 0.0
 
 HW_MGMT_THERMAL_ROOT = "/var/run/hw-management/thermal/"
 
 thermal_api_handler_cpu_core = {
     THERMAL_API_GET_TEMPERATURE:"cpu_core{}",
-    THERMAL_API_GET_HIGH_THRESHOLD:"cpu_core{}_max"
+    THERMAL_API_GET_HIGH_THRESHOLD:"cpu_core{}_max",
+    THERMAL_API_GET_HIGH_CRITICAL_THRESHOLD:"cpu_core{}_crit"
 }
 thermal_api_handler_cpu_pack = {
     THERMAL_API_GET_TEMPERATURE:"cpu_pack",
-    THERMAL_API_GET_HIGH_THRESHOLD:"cpu_pack_max"
+    THERMAL_API_GET_HIGH_THRESHOLD:"cpu_pack_max",
+    THERMAL_API_GET_HIGH_CRITICAL_THRESHOLD:"cpu_pack_crit"
 }
 thermal_api_handler_module = {
     THERMAL_API_GET_TEMPERATURE:"module{}_temp_input",
-    THERMAL_API_GET_HIGH_THRESHOLD:"module{}_temp_crit"
+    THERMAL_API_GET_HIGH_THRESHOLD:"module{}_temp_crit",
+    THERMAL_API_GET_HIGH_CRITICAL_THRESHOLD:"module{}_temp_emergency"
 }
 thermal_api_handler_psu = {
     THERMAL_API_GET_TEMPERATURE:"psu{}_temp",
-    THERMAL_API_GET_HIGH_THRESHOLD:"psu{}_temp_max"
+    THERMAL_API_GET_HIGH_THRESHOLD:"psu{}_temp_max",
+    THERMAL_API_GET_HIGH_CRITICAL_THRESHOLD:None
 }
 thermal_api_handler_gearbox = {
-    THERMAL_API_GET_TEMPERATURE:"temp_input_gearbox{}",
-    THERMAL_API_GET_HIGH_THRESHOLD:None
+    THERMAL_API_GET_TEMPERATURE:"gearbox{}_temp_input",
+    THERMAL_API_GET_HIGH_THRESHOLD:None,
+    THERMAL_API_GET_HIGH_CRITICAL_THRESHOLD:None
 }
 thermal_ambient_apis = {
     THERMAL_DEV_ASIC_AMBIENT : "asic",
@@ -106,7 +114,7 @@ thermal_api_names = [
     THERMAL_API_GET_HIGH_THRESHOLD
 ]
 
-hwsku_dict_thermal = {'ACS-MSN2700': 0, 'LS-SN2700':0, 'ACS-MSN2740': 3, 'ACS-MSN2100': 1, 'ACS-MSN2410': 2, 'ACS-MSN2010': 4, 'ACS-MSN3700': 5, 'ACS-MSN3700C': 6, 'Mellanox-SN2700': 0, 'Mellanox-SN2700-D48C8': 0, 'ACS-MSN3800': 7}
+hwsku_dict_thermal = {'ACS-MSN2700': 0, 'LS-SN2700':0, 'ACS-MSN2740': 3, 'ACS-MSN2100': 1, 'ACS-MSN2410': 2, 'ACS-MSN2010': 4, 'ACS-MSN3700': 5, 'ACS-MSN3700C': 6, 'Mellanox-SN2700': 0, 'Mellanox-SN2700-D48C8': 0, 'ACS-MSN3800': 7, 'Mellanox-SN3800-D112C8': 7, 'ACS-MSN4700': 8}
 thermal_profile_list = [
     # 2700
     {
@@ -231,7 +239,24 @@ thermal_profile_list = [
             ]
         )
     },
+    # 4700
+    {
+        THERMAL_DEV_CATEGORY_CPU_CORE:(0, 4),
+        THERMAL_DEV_CATEGORY_MODULE:(1, 32),
+        THERMAL_DEV_CATEGORY_PSU:(1, 2),
+        THERMAL_DEV_CATEGORY_CPU_PACK:(0,1),
+        THERMAL_DEV_CATEGORY_GEARBOX:(0,0),
+        THERMAL_DEV_CATEGORY_AMBIENT:(0,
+            [
+                THERMAL_DEV_ASIC_AMBIENT,
+                THERMAL_DEV_COMEX_AMBIENT,
+                THERMAL_DEV_PORT_AMBIENT,
+                THERMAL_DEV_FAN_AMBIENT
+            ]
+        )
+    }
 ]
+
 
 def initialize_thermals(sku, thermal_list, psu_list):
     # create thermal objects for all categories of sensors
@@ -255,15 +280,17 @@ def initialize_thermals(sku, thermal_list, psu_list):
             else:
                 if category == THERMAL_DEV_CATEGORY_PSU:
                     for index in range(count):
-                        thermal = Thermal(category, start + index, True, psu_list[index].get_powergood_status, "power off")
+                        thermal = Thermal(category, start + index, True, psu_list[index].get_power_available_status)
                         thermal_list.append(thermal)
                 else:
                     for index in range(count):
                         thermal = Thermal(category, start + index, True)
                         thermal_list.append(thermal)
 
+
+
 class Thermal(ThermalBase):
-    def __init__(self, category, index, has_index, dependency = None, hint = None):
+    def __init__(self, category, index, has_index, dependency = None):
         """
         index should be a string for category ambient and int for other categories
         """
@@ -280,8 +307,9 @@ class Thermal(ThermalBase):
         self.category = category
         self.temperature = self._get_file_from_api(THERMAL_API_GET_TEMPERATURE)
         self.high_threshold = self._get_file_from_api(THERMAL_API_GET_HIGH_THRESHOLD)
+        self.high_critical_threshold = self._get_file_from_api(THERMAL_API_GET_HIGH_CRITICAL_THRESHOLD)
         self.dependency = dependency
-        self.dependent_hint = hint
+
 
     def get_name(self):
         """
@@ -291,6 +319,7 @@ class Thermal(ThermalBase):
             string: The name of the device
         """
         return self.name
+
 
     def _read_generic_file(self, filename, len):
         """
@@ -304,6 +333,7 @@ class Thermal(ThermalBase):
             logger.log_info("Fail to read file {} due to {}".format(filename, repr(e)))
         return result
 
+
     def _get_file_from_api(self, api_name):
         if self.category == THERMAL_DEV_CATEGORY_AMBIENT:
             if api_name == THERMAL_API_GET_TEMPERATURE:
@@ -315,8 +345,12 @@ class Thermal(ThermalBase):
             if self.category in thermal_device_categories_singleton:
                 filename = handler
             else:
-                filename = handler.format(self.index)
+                if handler:
+                    filename = handler.format(self.index)
+                else:
+                    return None
         return join(HW_MGMT_THERMAL_ROOT, filename)
+
 
     def get_temperature(self):
         """
@@ -326,18 +360,19 @@ class Thermal(ThermalBase):
             A float number of current temperature in Celsius up to nearest thousandth
             of one degree Celsius, e.g. 30.125 
         """
-        if self.dependency and not self.dependency():
-            if self.dependent_hint:
-                hint = self.dependent_hint
-            else:
-                hint = "unknown reason"
-            logger.log_info("get_temperature for {} failed due to {}".format(self.name, hint))
-            return None
+        if self.dependency:
+            status, hint = self.dependency()
+            if not status:
+                logger.log_debug("get_temperature for {} failed due to {}".format(self.name, hint))
+                return None
         value_str = self._read_generic_file(self.temperature, 0)
         if value_str is None:
             return None
         value_float = float(value_str)
+        if self.category == THERMAL_DEV_CATEGORY_MODULE and value_float == THERMAL_API_INVALID_HIGH_THRESHOLD:
+            return None
         return value_float / 1000.0
+
 
     def get_high_threshold(self):
         """
@@ -349,8 +384,39 @@ class Thermal(ThermalBase):
         """
         if self.high_threshold is None:
             return None
+        if self.dependency:
+            status, hint = self.dependency()
+            if not status:
+                logger.log_debug("get_high_threshold for {} failed due to {}".format(self.name, hint))
+                return None
         value_str = self._read_generic_file(self.high_threshold, 0)
         if value_str is None:
             return None
         value_float = float(value_str)
+        if self.category == THERMAL_DEV_CATEGORY_MODULE and value_float == THERMAL_API_INVALID_HIGH_THRESHOLD:
+            return None
+        return value_float / 1000.0
+
+
+    def get_high_critical_threshold(self):
+        """
+        Retrieves the high critical threshold temperature of thermal
+
+        Returns:
+            A float number, the high critical threshold temperature of thermal in Celsius
+            up to nearest thousandth of one degree Celsius, e.g. 30.125
+        """
+        if self.high_critical_threshold is None:
+            return None
+        if self.dependency:
+            status, hint = self.dependency()
+            if not status:
+                logger.log_debug("get_high_critical_threshold for {} failed due to {}".format(self.name, hint))
+                return None
+        value_str = self._read_generic_file(self.high_critical_threshold, 0)
+        if value_str is None:
+            return None
+        value_float = float(value_str)
+        if self.category == THERMAL_DEV_CATEGORY_MODULE and value_float == THERMAL_API_INVALID_HIGH_THRESHOLD:
+            return None
         return value_float / 1000.0

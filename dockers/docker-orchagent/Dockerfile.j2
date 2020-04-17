@@ -11,16 +11,13 @@ RUN apt-get update &&       \
     apt-get install -f -y   \
         ifupdown            \
         arping              \
-        libdbus-1-3         \
-        libdaemon0          \
-        libjansson4         \
-        libpython2.7        \
         iproute2            \
         ndisc6              \
         tcpdump             \
         libelf1             \
         libmnl0             \
-        bridge-utils
+        bridge-utils        \
+        conntrack
 
 {% if ( CONFIGURED_ARCH == "armhf" or CONFIGURED_ARCH == "arm64" ) %}
 ## Fix for gcc/python not found in arm docker
