@@ -87,7 +87,7 @@ class SfpUtil(SfpUtilBase):
 
     def _get_port_name(self, port_num):
         if port_num in self.osfp_ports:
-            self._port_name = "QSFP" + str(port_num - self.OSFP_PORT_START + 1)
+            self._port_name = "QSFPDD" + str(port_num - self.OSFP_PORT_START + 1)
         else:
             self._port_name = "SFP+" + str(port_num - self.SFP_PORT_START + 1)
         return self._port_name
