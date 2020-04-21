@@ -22,7 +22,7 @@
 #include <linux/interrupt.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
-#include <linux/i2c/pca954x.h>
+#include <linux/platform_data/pca954x.h>
 #include "i2c-ocores.h"
 #include "xcvr-cls.h"
 
