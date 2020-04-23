@@ -28,5 +28,5 @@ Description: kernel modules for platform devices such as led, sfp.
 
 Package: platform-modules-silverstone-dp
 Architecture: amd64
-Depends: linux-image-4.9.0-11-2-amd64
+Depends: linux-image-4.19.0-6-amd64-unsigned
 Description: kernel modules for platform devices such as led, sfp.

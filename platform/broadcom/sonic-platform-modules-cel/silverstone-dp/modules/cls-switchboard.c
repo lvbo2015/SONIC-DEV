@@ -22,7 +22,7 @@
 #include <linux/interrupt.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
-#include <linux/i2c/pca954x.h>
+#include <linux/platform_data/pca954x.h>
 #include "i2c-ocores.h"
 #include "xcvr-cls.h"
 
@@ -58,7 +58,7 @@ struct i2c_bus_config {
 	struct resource *res;
 	ssize_t num_res;
 	struct ocores_i2c_platform_data pdata;
-}; 
+};
 
 /* switchbrd_priv - switchboard private data */
 struct switchbrd_priv {
@@ -73,27 +73,27 @@ struct switchbrd_priv {
 /* I2C bus speed param */
 static int bus_clock_master_1 = 100;
 module_param(bus_clock_master_1, int, 0660);
-MODULE_PARM_DESC(bus_clock_master_1, 
+MODULE_PARM_DESC(bus_clock_master_1,
 	"I2C master 1 bus speed in KHz 50/80/100/200/400");
 
 static int bus_clock_master_2 = 100;
 module_param(bus_clock_master_2, int, 0660);
-MODULE_PARM_DESC(bus_clock_master_2, 
+MODULE_PARM_DESC(bus_clock_master_2,
 	"I2C master 2 bus speed in KHz 50/80/100/200/400");
 
 static int bus_clock_master_3 = 100;
 module_param(bus_clock_master_3, int, 0660);
-MODULE_PARM_DESC(bus_clock_master_3, 
+MODULE_PARM_DESC(bus_clock_master_3,
 	"I2C master 3 bus speed in KHz 50/80/100/200/400");
 
 static int bus_clock_master_4 = 100;
 module_param(bus_clock_master_4, int, 0660);
-MODULE_PARM_DESC(bus_clock_master_4, 
+MODULE_PARM_DESC(bus_clock_master_4,
 	"I2C master 4 bus speed in KHz 50/80/100/200/400");
 
 static int bus_clock_master_5 = 100;
 module_param(bus_clock_master_5, int, 0660);
-MODULE_PARM_DESC(bus_clock_master_5, 
+MODULE_PARM_DESC(bus_clock_master_5,
 	"I2C master 5 bus speed in KHz 50/80/100/200/400");
 
 /* PCA9548 channel config on MASTER BUS 3 */
@@ -183,54 +183,54 @@ static struct i2c_board_info i2c_info_3[] = {
 static struct resource cls_i2c_res_1[] = {
 	{
 		.start = 0x800, .end = 0x81F,
-		.flags = IORESOURCE_MEM,}, 
+		.flags = IORESOURCE_MEM,},
 };
 
 /* Resource IOMEM for i2c bus 2 */
 static struct resource  cls_i2c_res_2[] = {
 	{
 		.start = 0x820, .end = 0x83F,
-		.flags = IORESOURCE_MEM,}, 
+		.flags = IORESOURCE_MEM,},
 };
 
 /* Resource IOMEM for i2c bus 3 */
 static struct resource  cls_i2c_res_3[] = {
 	{
 		.start = 0x840, .end = 0x85F,
-		.flags = IORESOURCE_MEM,}, 
+		.flags = IORESOURCE_MEM,},
 };
 
 /* Resource IOMEM for i2c bus 4 */
 static struct  resource cls_i2c_res_4[] = {
 	{
 		.start = 0x860, .end = 0x87F,
-		.flags = IORESOURCE_MEM,}, 
+		.flags = IORESOURCE_MEM,},
 };
 
 /* Resource IOMEM for i2c bus 5 */
 static struct resource  cls_i2c_res_5[] = {
 	{
 		.start = 0x880, .end = 0x89F,
-		.flags = IORESOURCE_MEM,}, 
+		.flags = IORESOURCE_MEM,},
 };
 
 /* Resource IOMEM for reg access */
 static struct resource reg_io_res[] = {
-	{       
+	{
 		.start = 0x00, .end = 0xFF,
 		.flags = IORESOURCE_MEM,},
 };
 
 /* Resource IOMEM for spi flash firmware upgrade */
 static struct resource spi_flash_res[] = {
-	{       
+	{
 		.start = 0x1200, .end = 0x121F,
 		.flags = IORESOURCE_MEM,},
 };
 
 /* Resource IOMEM for front panel XCVR */
 static struct resource xcvr_res[] = {
-	{       
+	{
 		.start = 0x4000, .end = 0x421F,
 		.flags = IORESOURCE_MEM,},
 };
@@ -251,9 +251,9 @@ static struct i2c_bus_config i2c_bus_configs[] = {
 		},
 	},
 	{
-		.id = 2, 
-		.res = cls_i2c_res_2, 
-		.num_res = ARRAY_SIZE(cls_i2c_res_2), 
+		.id = 2,
+		.res = cls_i2c_res_2,
+		.num_res = ARRAY_SIZE(cls_i2c_res_2),
 		.pdata = {
 			.reg_shift = OCORE_REGSHIFT,
 			.reg_io_width = OCORE_REG_IO_WIDTH,
@@ -265,9 +265,9 @@ static struct i2c_bus_config i2c_bus_configs[] = {
 		},
 	},
 	{
-		.id = 3, 
-		.res = cls_i2c_res_3, 
-		.num_res = ARRAY_SIZE(cls_i2c_res_3), 
+		.id = 3,
+		.res = cls_i2c_res_3,
+		.num_res = ARRAY_SIZE(cls_i2c_res_3),
 		.pdata = {
 			.reg_shift = OCORE_REGSHIFT,
 			.reg_io_width = OCORE_REG_IO_WIDTH,
@@ -279,9 +279,9 @@ static struct i2c_bus_config i2c_bus_configs[] = {
 		},
 	},
 	{
-		.id = 4, 
-		.res = cls_i2c_res_4, 
-		.num_res = ARRAY_SIZE(cls_i2c_res_4), 
+		.id = 4,
+		.res = cls_i2c_res_4,
+		.num_res = ARRAY_SIZE(cls_i2c_res_4),
 		.pdata = {
 			.reg_shift = OCORE_REGSHIFT,
 			.reg_io_width = OCORE_REG_IO_WIDTH,
@@ -293,9 +293,9 @@ static struct i2c_bus_config i2c_bus_configs[] = {
 		},
 	},
 	{
-		.id = 5, 
-		.res = cls_i2c_res_5, 
-		.num_res = ARRAY_SIZE(cls_i2c_res_5), 
+		.id = 5,
+		.res = cls_i2c_res_5,
+		.num_res = ARRAY_SIZE(cls_i2c_res_5),
 		.pdata = {
 			.reg_shift = OCORE_REGSHIFT,
 			.reg_io_width = OCORE_REG_IO_WIDTH,
@@ -379,10 +379,10 @@ static int cls_fpga_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		goto err_disable_device;
 	}
 
-	dev_dbg(&dev->dev, "BAR%d res: 0x%lx-0x%llx\n", MMIO_BAR, 
+	dev_dbg(&dev->dev, "BAR%d res: 0x%lx-0x%llx\n", MMIO_BAR,
 		rstart, pci_resource_end(dev, MMIO_BAR));
 
-	priv = devm_kzalloc(&dev->dev, 
+	priv = devm_kzalloc(&dev->dev,
 				sizeof(struct switchbrd_priv), GFP_KERNEL);
 	if (!priv){
 		err = -ENOMEM;
@@ -392,8 +392,8 @@ static int cls_fpga_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	pci_set_drvdata(dev, priv);
 	num_i2c_bus = ARRAY_SIZE(i2c_bus_configs);
 	i2cbuses_pdev = devm_kzalloc(
-				&dev->dev, 
-				num_i2c_bus * sizeof(struct platform_device*), 
+				&dev->dev,
+				num_i2c_bus * sizeof(struct platform_device*),
 				GFP_KERNEL);
 
 	reg_io_res[0].start += rstart;
@@ -403,7 +403,7 @@ static int cls_fpga_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	xcvr_res[0].end += rstart;
 
 	regio_pdev = platform_device_register_resndata(
-			&dev->dev, "cls-swbrd-io", 
+			&dev->dev, "cls-swbrd-io",
 			-1,
 			reg_io_res, ARRAY_SIZE(reg_io_res),
 			NULL, 0);
@@ -415,12 +415,12 @@ static int cls_fpga_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	}
 
 	xcvr_pdev = platform_device_register_resndata(
-						      NULL, 
-						      "cls-xcvr", 
+						      NULL,
+						      "cls-xcvr",
 						      -1,
-						      xcvr_res, 
+						      xcvr_res,
 						      ARRAY_SIZE(xcvr_res),
-						      &xcvr_data, 
+						      &xcvr_data,
 						      sizeof(xcvr_data));
 
 	if (IS_ERR(xcvr_pdev)) {
@@ -455,20 +455,20 @@ static int cls_fpga_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		}
 
 		dev_dbg(&dev->dev, "i2c-bus.%d: 0x%llx - 0x%llx\n",
-			i2c_bus_configs[i].id, 
-			i2c_bus_configs[i].res[0].start, 
+			i2c_bus_configs[i].id,
+			i2c_bus_configs[i].res[0].start,
 			i2c_bus_configs[i].res[0].end);
 
 		i2cbuses_pdev[i] = platform_device_register_resndata(
-					&dev->dev, "cls-ocores-i2c", 
+					&dev->dev, "cls-ocores-i2c",
 					i2c_bus_configs[i].id,
-					i2c_bus_configs[i].res, 
+					i2c_bus_configs[i].res,
 					i2c_bus_configs[i].num_res,
-					&i2c_bus_configs[i].pdata, 
+					&i2c_bus_configs[i].pdata,
 					sizeof(i2c_bus_configs[i].pdata));
 
 		if (IS_ERR(i2cbuses_pdev[i])) {
-			dev_err(&dev->dev, "Failed to register ocores-i2c.%d\n", 
+			dev_err(&dev->dev, "Failed to register ocores-i2c.%d\n",
 				i2c_bus_configs[i].id);
 			err = PTR_ERR(i2cbuses_pdev[i]);
 			goto err_unregister_ocore;
