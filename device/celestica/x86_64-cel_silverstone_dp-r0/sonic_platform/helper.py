@@ -68,6 +68,15 @@ class APIHelper():
         except IOError:
             pass
         return None
+        
+    def write_hex_value(self, file_path,value):
+        try:
+            with open(file_path, 'wb') as fd:
+                data = fd.write(hex(value))
+                return data
+        except IOError:
+            pass
+        return None
 
     def ipmi_raw(self, netfn, cmd):
         status = True

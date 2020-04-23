@@ -13,6 +13,7 @@ try:
     import re
     import os
     import subprocess
+    import time
     import json
     from sonic_platform_base.chassis_base import ChassisBase
     from helper import APIHelper
@@ -23,6 +24,8 @@ NUM_FAN_TRAY = 7
 NUM_FAN = 2
 NUM_PSU = 2
 NUM_THERMAL = 14
+NUM_QSFPDD = 6
+NUM_QSFP = 24
 NUM_SFP = 30
 NUM_COMPONENT = 5
 
@@ -30,6 +33,8 @@ IPMI_OEM_NETFN = "0x3A"
 IPMI_GET_REBOOT_CAUSE = "0x03 0x00 0x01 0x06"
 TLV_EEPROM_I2C_BUS = 0
 TLV_EEPROM_I2C_ADDR = 56
+PATH_QSFP_SYSFS = "/sys/devices/platform/cls-xcvr/QSFP{0}/interrupt_mask"
+PATH_QSFPDD_SYSFS = "/sys/devices/platform/cls-xcvr/QSFPDD{0}/interrupt_mask"
 
 
 class Chassis(ChassisBase):
@@ -46,6 +51,7 @@ class Chassis(ChassisBase):
             self.__initialize_fan()
             self.__initialize_eeprom()
             self.__initialize_thermals()
+            self.__initialize_interrupts()
 
     def __initialize_sfp(self):
         from sonic_platform.sfp import Sfp
@@ -82,6 +88,13 @@ class Chassis(ChassisBase):
         for index in range(0, NUM_COMPONENT):
             component = Component(index)
             self._component_list.append(component)
+
+    def __initialize_interrupts(self):
+            # Initial Interrup MASK for QSFP, QSFPDD
+        for i in range(NUM_QSFP):
+            self._api_helper.write_hex_value(PATH_QSFP_SYSFS.format(i+1), 255)
+        for i in range(NUM_QSFPDD):
+            self._api_helper.write_hex_value(PATH_QSFPDD_SYSFS.format(i+1), 255)
 
     def get_base_mac(self):
         """
@@ -260,3 +273,64 @@ class Chassis(ChassisBase):
             A boolean value, True if device is operating properly, False if not
         """
         return True
+
+    ##############################################################
+    ###################### Event methods ########################
+    ##############################################################       
+    def __clear_interrupt(self, name): 
+        PATH_QSFP_SYSFS = "/sys/devices/platform/cls-xcvr/{0}/interrupt"
+        self._api_helper.write_hex_value(PATH_QSFP_SYSFS.format(name),255)
+        time.sleep(0.5)
+        self._api_helper.write_hex_value(PATH_QSFP_SYSFS.format(name),0)
+        return self._api_helper.read_txt_file(PATH_QSFP_SYSFS.format(name))
+
+    def __check_devices_status(self, name):
+        PATH_QSFP_SYSFS = "/sys/devices/platform/cls-xcvr/{0}/qsfp_modprsL"
+        return self._api_helper.read_txt_file(PATH_QSFP_SYSFS.format(name))
+
+    def __compare_event_object(self, interrup_devices):
+        QSFP_devices = {}
+        QSFPDD_devices = {}
+        json_obj = {}
+        for device_name in interrup_devices:
+            if "QSFPDD" in device_name:
+                QSFPDD_devices[device_name] = 1 - int(self.__check_devices_status(device_name))
+            elif "QSFP" in device_name:
+                QSFP_devices[device_name] = 1 - int(self.__check_devices_status(device_name))
+            self.__clear_interrupt(device_name)
+        if len(QSFP_devices):
+            json_obj['qsfp'] = QSFP_devices
+        if len(QSFPDD_devices):
+            json_obj['qsfp-dd'] = QSFPDD_devices
+        return json.dumps(json_obj)
+
+    def __check_all_interrupt_event(self):
+        interrup_device = {}
+        QSFP_NAME = "QSFP{0}"
+        QSFPDD_NAME = "QSFPDD{0}"
+        for i in range(NUM_QSFP):
+            if self._api_helper.read_txt_file(PATH_QSFP_SYSFS.format(i+1)) != '0x00':
+                interrup_device[QSFP_NAME.format(i+1)] = 1
+        for i in range(NUM_QSFPDD):
+            if self._api_helper.read_txt_file(PATH_QSFPDD_SYSFS.format(i+1)) != '0x00':
+                interrup_device[QSFPDD_NAME.format(i+1)] = 1
+        return interrup_device
+
+    def get_change_event(self, timeout=0):
+        if timeout == 0 :
+            flag_change = True
+            while flag_change:
+                interrup_device = self.__check_all_interrupt_event()
+                if len(interrup_device):
+                    flag_change = False
+                else:
+                    time.sleep(0.5)
+            return (True , self.__compare_event_object(interrup_device))
+        else:
+            device_list_change = {}
+            while timeout:
+                interrup_device = self.__check_all_interrupt_event()
+                time.sleep(1)
+                timeout -= 1;
+            device_list_change = self.__compare_event_object(interrup_device)
+            return (True , device_list_change)
