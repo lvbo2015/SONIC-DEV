@@ -45,11 +45,11 @@ class Chassis(ChassisBase):
         self._api_helper = APIHelper()
         self.sfp_module_initialized = False
         self.__initialize_components()
+        self.__initialize_eeprom()
 
         if not self._api_helper.is_host():
             self.__initialize_psu()
             self.__initialize_fan()
-            self.__initialize_eeprom()
             self.__initialize_thermals()
             self.__initialize_interrupts()
 
