@@ -20,6 +20,8 @@ try:
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
+DUMMY_CHANGE_EVENT = True
+
 NUM_FAN_TRAY = 7
 NUM_FAN = 2
 NUM_PSU = 2
@@ -320,6 +322,8 @@ class Chassis(ChassisBase):
         return interrup_device
 
     def get_change_event(self, timeout=0):
+        if DUMMY_CHANGE_EVENT:
+            DUMMY_TIMEOUT = 120    
         if timeout == 0 :
             flag_change = True
             while flag_change:
@@ -328,12 +332,14 @@ class Chassis(ChassisBase):
                     flag_change = False
                 else:
                     time.sleep(0.5)
+                DUMMY_TIMEOUT < 0 ? flag_change = False: DUMMY_TIMEOUT -= 1
+
             return (True , self.__compare_event_object(interrup_device))
         else:
             device_list_change = {}
             while timeout:
                 interrup_device = self.__check_all_interrupt_event()
                 time.sleep(1)
-                timeout -= 1;
+                timeout -= 1
             device_list_change = self.__compare_event_object(interrup_device)
             return (True , device_list_change)
