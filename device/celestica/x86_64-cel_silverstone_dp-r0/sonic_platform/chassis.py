@@ -20,6 +20,8 @@ try:
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
+DUMMY_CHANGE_EVENT = True
+
 NUM_FAN_TRAY = 7
 NUM_FAN = 2
 NUM_PSU = 2
@@ -33,8 +35,7 @@ IPMI_OEM_NETFN = "0x3A"
 IPMI_GET_REBOOT_CAUSE = "0x03 0x00 0x01 0x06"
 TLV_EEPROM_I2C_BUS = 0
 TLV_EEPROM_I2C_ADDR = 56
-PATH_QSFP_SYSFS = "/sys/devices/platform/cls-xcvr/QSFP{0}/interrupt_mask"
-PATH_QSFPDD_SYSFS = "/sys/devices/platform/cls-xcvr/QSFPDD{0}/interrupt_mask"
+
 
 
 class Chassis(ChassisBase):
@@ -90,7 +91,9 @@ class Chassis(ChassisBase):
             self._component_list.append(component)
 
     def __initialize_interrupts(self):
-            # Initial Interrup MASK for QSFP, QSFPDD
+        # Initial Interrup MASK for QSFP, QSFPDD
+        PATH_QSFP_SYSFS = "/sys/devices/platform/cls-xcvr/QSFP{0}/interrupt_mask"
+        PATH_QSFPDD_SYSFS = "/sys/devices/platform/cls-xcvr/QSFPDD{0}/interrupt_mask"
         for i in range(NUM_QSFP):
             self._api_helper.write_hex_value(PATH_QSFP_SYSFS.format(i+1), 255)
         for i in range(NUM_QSFPDD):
@@ -298,16 +301,18 @@ class Chassis(ChassisBase):
             elif "QSFP" in device_name:
                 QSFP_devices[device_name] = 1 - int(self.__check_devices_status(device_name))
             self.__clear_interrupt(device_name)
-        if len(QSFP_devices):
-            json_obj['qsfp'] = QSFP_devices
-        if len(QSFPDD_devices):
-            json_obj['qsfp-dd'] = QSFPDD_devices
+        # if len(QSFP_devices):
+        json_obj['qsfp'] = QSFP_devices
+        # if len(QSFPDD_devices):
+        json_obj['qsfp-dd'] = QSFPDD_devices
         return json.dumps(json_obj)
 
     def __check_all_interrupt_event(self):
         interrup_device = {}
         QSFP_NAME = "QSFP{0}"
         QSFPDD_NAME = "QSFPDD{0}"
+        PATH_QSFP_SYSFS = "/sys/devices/platform/cls-xcvr/QSFP{0}/interrupt"
+        PATH_QSFPDD_SYSFS = "/sys/devices/platform/cls-xcvr/QSFPDD{0}/interrupt"
         for i in range(NUM_QSFP):
             if self._api_helper.read_txt_file(PATH_QSFP_SYSFS.format(i+1)) != '0x00':
                 interrup_device[QSFP_NAME.format(i+1)] = 1
@@ -317,6 +322,8 @@ class Chassis(ChassisBase):
         return interrup_device
 
     def get_change_event(self, timeout=0):
+        if DUMMY_CHANGE_EVENT:
+            DUMMY_TIMEOUT = 120    
         if timeout == 0 :
             flag_change = True
             while flag_change:
@@ -325,12 +332,18 @@ class Chassis(ChassisBase):
                     flag_change = False
                 else:
                     time.sleep(0.5)
+                if DUMMY_CHANGE_EVENT:
+                    if DUMMY_TIMEOUT < 0 : 
+                        flag_change = False
+                    else:
+                        DUMMY_TIMEOUT -= 1
+
             return (True , self.__compare_event_object(interrup_device))
         else:
             device_list_change = {}
             while timeout:
                 interrup_device = self.__check_all_interrupt_event()
                 time.sleep(1)
-                timeout -= 1;
+                timeout -= 1
             device_list_change = self.__compare_event_object(interrup_device)
             return (True , device_list_change)
