@@ -301,9 +301,9 @@ class Chassis(ChassisBase):
             elif "QSFP" in device_name:
                 QSFP_devices[device_name] = 1 - int(self.__check_devices_status(device_name))
             self.__clear_interrupt(device_name)
-        if len(QSFP_devices):
+        # if len(QSFP_devices):
             json_obj['qsfp'] = QSFP_devices
-        if len(QSFPDD_devices):
+        # if len(QSFPDD_devices):
             json_obj['qsfp-dd'] = QSFPDD_devices
         return json.dumps(json_obj)
 
@@ -332,7 +332,11 @@ class Chassis(ChassisBase):
                     flag_change = False
                 else:
                     time.sleep(0.5)
-                DUMMY_TIMEOUT < 0 ? flag_change = False: DUMMY_TIMEOUT -= 1
+                if DUMMY_CHANGE_EVENT:
+                    if DUMMY_TIMEOUT < 0 : 
+                        flag_change = False
+                    else:
+                        DUMMY_TIMEOUT -= 1
 
             return (True , self.__compare_event_object(interrup_device))
         else:
