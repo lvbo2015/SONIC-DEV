@@ -33,8 +33,7 @@ IPMI_OEM_NETFN = "0x3A"
 IPMI_GET_REBOOT_CAUSE = "0x03 0x00 0x01 0x06"
 TLV_EEPROM_I2C_BUS = 0
 TLV_EEPROM_I2C_ADDR = 56
-PATH_QSFP_SYSFS = "/sys/devices/platform/cls-xcvr/QSFP{0}/interrupt_mask"
-PATH_QSFPDD_SYSFS = "/sys/devices/platform/cls-xcvr/QSFPDD{0}/interrupt_mask"
+
 
 
 class Chassis(ChassisBase):
@@ -90,7 +89,9 @@ class Chassis(ChassisBase):
             self._component_list.append(component)
 
     def __initialize_interrupts(self):
-            # Initial Interrup MASK for QSFP, QSFPDD
+        # Initial Interrup MASK for QSFP, QSFPDD
+        PATH_QSFP_SYSFS = "/sys/devices/platform/cls-xcvr/QSFP{0}/interrupt_mask"
+        PATH_QSFPDD_SYSFS = "/sys/devices/platform/cls-xcvr/QSFPDD{0}/interrupt_mask"
         for i in range(NUM_QSFP):
             self._api_helper.write_hex_value(PATH_QSFP_SYSFS.format(i+1), 255)
         for i in range(NUM_QSFPDD):
@@ -308,6 +309,8 @@ class Chassis(ChassisBase):
         interrup_device = {}
         QSFP_NAME = "QSFP{0}"
         QSFPDD_NAME = "QSFPDD{0}"
+        PATH_QSFP_SYSFS = "/sys/devices/platform/cls-xcvr/QSFP{0}/interrupt"
+        PATH_QSFPDD_SYSFS = "/sys/devices/platform/cls-xcvr/QSFPDD{0}/interrupt"
         for i in range(NUM_QSFP):
             if self._api_helper.read_txt_file(PATH_QSFP_SYSFS.format(i+1)) != '0x00':
                 interrup_device[QSFP_NAME.format(i+1)] = 1
