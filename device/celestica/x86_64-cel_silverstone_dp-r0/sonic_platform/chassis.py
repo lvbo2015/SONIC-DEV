@@ -302,9 +302,9 @@ class Chassis(ChassisBase):
                 QSFP_devices[device_name] = 1 - int(self.__check_devices_status(device_name))
             self.__clear_interrupt(device_name)
         # if len(QSFP_devices):
-            json_obj['qsfp'] = QSFP_devices
+        json_obj['qsfp'] = QSFP_devices
         # if len(QSFPDD_devices):
-            json_obj['qsfp-dd'] = QSFPDD_devices
+        json_obj['qsfp-dd'] = QSFPDD_devices
         return json.dumps(json_obj)
 
     def __check_all_interrupt_event(self):
