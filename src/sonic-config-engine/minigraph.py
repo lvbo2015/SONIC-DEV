@@ -26,6 +26,12 @@ ns1 = "http://schemas.datacontract.org/2004/07/Microsoft.Search.Autopilot.Evolut
 ns2 = "Microsoft.Search.Autopilot.NetMux"
 ns3 = "http://www.w3.org/2001/XMLSchema-instance"
 
+###############################################################################
+#
+# Minigraph parsing functions
+#
+###############################################################################
+
 class minigraph_encoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (
@@ -224,7 +230,14 @@ def parse_dpg(dpg, hname):
         aclintfs = child.find(str(QName(ns, "AclInterfaces")))
         acls = {}
         for aclintf in aclintfs.findall(str(QName(ns, "AclInterface"))):
-            aclname = aclintf.find(str(QName(ns, "InAcl"))).text.upper().replace(" ", "_").replace("-", "_")
+            if aclintf.find(str(QName(ns, "InAcl"))) is not None:
+                aclname = aclintf.find(str(QName(ns, "InAcl"))).text.upper().replace(" ", "_").replace("-", "_")
+                stage = "ingress"
+            elif aclintf.find(str(QName(ns, "OutAcl"))) is not None:
+                aclname = aclintf.find(str(QName(ns, "OutAcl"))).text.upper().replace(" ", "_").replace("-", "_")
+                stage = "egress"
+            else:
+                system.exit("Error: 'AclInterface' must contain either an 'InAcl' or 'OutAcl' subelement.")
             aclattach = aclintf.find(str(QName(ns, "AttachTo"))).text.split(';')
             acl_intfs = []
             is_mirror = False
@@ -241,7 +254,7 @@ def parse_dpg(dpg, hname):
                     # to LAG will be applied to all the LAG members internally by SAI/SDK
                     acl_intfs.append(member)
                 elif vlans.has_key(member):
-                    print >> sys.stderr, "Warning: ACL " + aclname + " is attached to a Vlan interface, which is currently not supported"
+                    acl_intfs.append(member)
                 elif port_alias_map.has_key(member):
                     acl_intfs.append(port_alias_map[member])
                     # Give a warning if trying to attach ACL to a LAG member interface, correct way is to attach ACL to the LAG interface
@@ -251,24 +264,27 @@ def parse_dpg(dpg, hname):
                     if member.lower().startswith('erspanv6'):
                         is_mirror_v6 = True
                     else:
-                        is_mirror = True;
-                    # Erspan session will be attached to all front panel ports,
-                    # if panel ports is a member port of LAG, should add the LAG 
-                    # to acl table instead of the panel ports
+                        is_mirror = True
+                    # Erspan session will be attached to all front panel ports
+                    # initially. If panel ports is a member port of LAG, then
+                    # the LAG will be added to acl table instead of the panel
+                    # ports. Non-active ports will be removed from this list
+                    # later after the rest of the minigraph has been parsed.
                     acl_intfs = pc_intfs[:]
                     for panel_port in port_alias_map.values():
                         if panel_port not in intfs_inpc:
                             acl_intfs.append(panel_port)
-                    break;
+                    break
             if acl_intfs:
                 acls[aclname] = {'policy_desc': aclname,
+                                 'stage': stage,
                                  'ports': acl_intfs}
                 if is_mirror:
                     acls[aclname]['type'] = 'MIRROR'
                 elif is_mirror_v6:
                     acls[aclname]['type'] = 'MIRRORV6'
                 else:
-                    acls[aclname]['type'] = 'L3'
+                    acls[aclname]['type'] = 'L3V6' if  'v6' in aclname.lower() else 'L3'
             else:
                 # This ACL has no interfaces to attach to -- consider this a control plane ACL
                 try:
@@ -286,6 +302,7 @@ def parse_dpg(dpg, hname):
                     else:
                         acls[aclname] = {'policy_desc': aclname,
                                          'type': 'CTRLPLANE',
+                                         'stage': stage,
                                          'services': [aclservice]}
                 except:
                     print >> sys.stderr, "Warning: Ignoring Control Plane ACL %s without type" % aclname
@@ -351,8 +368,8 @@ def parse_cpg(cpg, hname):
                                 'name': name,
                                 'ip_range': ip_range_group
                             }
-                            if bgpPeer.find(str(QName(ns1, "Address"))) is not None:
-                                bgp_peers_with_range[name]['src_address'] = bgpPeer.find(str(QName(ns1, "Address"))).text
+                            if bgpPeer.find(str(QName(ns, "Address"))) is not None:
+                                bgp_peers_with_range[name]['src_address'] = bgpPeer.find(str(QName(ns, "Address"))).text
                             if bgpPeer.find(str(QName(ns1, "PeerAsn"))) is not None:
                                 bgp_peers_with_range[name]['peer_asn'] = bgpPeer.find(str(QName(ns1, "PeerAsn"))).text
                 else:
@@ -414,6 +431,40 @@ def parse_deviceinfo(meta, hwsku):
                     port_descriptions[port_alias_map.get(alias, alias)] = desc.text
                 port_speeds[port_alias_map.get(alias, alias)] = speed
     return port_speeds, port_descriptions
+
+###############################################################################
+#
+# Post-processing functions
+#
+###############################################################################
+
+def filter_acl_mirror_table_bindings(acls, neighbors, port_channels):
+    """
+        Filters out inactive front-panel ports from the binding list for mirror
+        ACL tables. We define an "active" port as one that is a member of a
+        port channel or one that is connected to a neighboring device.
+    """
+
+    for acl_table, group_params in acls.iteritems():
+        group_type = group_params.get('type', None)
+
+        if group_type != 'MIRROR' and group_type != 'MIRRORV6':
+            continue
+
+        active_ports = [ port for port in group_params.get('ports', []) if port in neighbors.keys() or port in port_channels ]
+
+        if not active_ports:
+            print >> sys.stderr, 'Warning: mirror table {} in ACL_TABLE does not have any ports bound to it'.format(acl_table)
+
+        acls[acl_table]['ports'] = active_ports
+
+    return acls
+
+###############################################################################
+#
+# Main functions
+#
+###############################################################################
 
 def parse_xml(filename, platform=None, port_config_file=None):
     root = ET.parse(filename).getroot()
@@ -627,7 +678,7 @@ def parse_xml(filename, platform=None, port_config_file=None):
     results['NTP_SERVER'] = dict((item, {}) for item in ntp_servers)
     results['TACPLUS_SERVER'] = dict((item, {'priority': '1', 'tcp_port': '49'}) for item in tacacs_servers)
 
-    results['ACL_TABLE'] = acls
+    results['ACL_TABLE'] = filter_acl_mirror_table_bindings(acls, neighbors, pcs)
 
     # Do not configure the minigraph's mirror session, which is currently unused
     # mirror_sessions = {}

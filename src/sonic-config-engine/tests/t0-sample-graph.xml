@@ -305,7 +305,12 @@
         </AclInterface>
         <AclInterface>
           <AttachTo>PortChannel01;PortChannel02;PortChannel03;PortChannel04</AttachTo>
-          <InAcl>DataAcl</InAcl>
+          <InAcl>DataAclIngress</InAcl>
+          <Type>DataPlane</Type>
+        </AclInterface>
+        <AclInterface>
+          <AttachTo>PortChannel01;PortChannel02</AttachTo>
+          <OutAcl>DataAclEgress</OutAcl>
           <Type>DataPlane</Type>
         </AclInterface>
         <AclInterface>
@@ -382,6 +387,13 @@
         <StartDevice>ARISTA05T1</StartDevice>
         <StartPort>Ethernet1/33</StartPort>
         <Validate>true</Validate>
+      </DeviceLinkBase>
+      <DeviceLinkBase>
+        <ElementType>DeviceInterfaceLink</ElementType>
+        <EndDevice>Servers0</EndDevice>
+        <EndPort>eth0</EndPort>
+        <StartDevice>switch-t0</StartDevice>
+        <StartPort>fortyGigE0/4</StartPort>
       </DeviceLinkBase>
     </DeviceInterfaceLinks>
     <Devices>
