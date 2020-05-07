@@ -1,0 +1,90 @@
+BMC api auto test framework
+
+1.Place file bmc_api_unittest.zip on /home/admin
+2.run command : sudo su 
+3.run command : unzip bmc_api_unittest.zip 
+4.run command : cd bmc_api_unittest 
+5.run command : ./install.sh 
+6.Copy bios,bmc and fpga images to this following path 
+
+        BMC_IMAGE_PATH = '/home/admin/img/flash-as58xx-cl'
+        BIOS_IMAGE_PATH = '/home/admin/img/bios.bin'
+        FPGA_IMAGE_PATH = '/home/admin/img/fpga.bin'
+
+7. Copy cpld images to this following path 
+
+        - fishbone48
+
+        FAN_CPLD = '/home/admin/img/as13-32h_cpld_1_cpu_pwr.vme'
+        BASE_CPLD = '/home/admin/img/as13-32h_cpld_2_cpu_pwr.vme'
+        CPU_CPLD = '/home/admin/img/as13-32h_cpld_3_cpu_pwr.vme'
+        SW_CPLD1 = '/home/admin/img/as13-32h_cpld_4_cpu_pwr.vme'
+        SW_CPLD2 = '/home/admin/img/as13-32h_cpld_5_cpu_pwr.vme'
+        FAN_CPLD_REFRESH = '/home/admin/img/as13-32h_cpld_1_transfr_bmc.vme'
+        BASE_CPLD_REFRESH = '/home/admin/img/as13-32h_cpld_2_transfr_bmc.vme'
+
+        - fishbone48
+
+        FAN_CPLD = '/home/admin/img/as13-48f8h_cpld_1_cpu_pwr.vme'
+        BASE_CPLD = '/home/admin/img/as13-48f8h_cpld_2_cpu_pwr.vme'
+        CPU_CPLD = '/home/admin/img/as13-48f8h_cpld_3_cpu_pwr.vme'
+        SW_CPLD1 = '/home/admin/img/as13-48f8h_cpld_4_cpu_pwr.vme'
+        SW_CPLD2 = '/home/admin/img/as13-48f8h_cpld_5_cpu_pwr.vme'
+        FAN_CPLD_REFRESH = '/home/admin/img/as13-48f8h_cpld_1_transfr_bmc.vme'
+        BASE_CPLD_REFRESH = '/home/admin/img/as13-48f8h_cpld_2_transfr_bmc.vme'
+
+        - phalanx
+
+        FAN_CPLD = '/home/admin/img/as23-128h_cpld_1_main_cpu_pwr.vme'
+        BASE_CPLD = '/home/admin/img/as23-128h_cpld_2_main_cpu_pwr.vme'
+        CPU_CPLD = '/home/admin/img/as23-128h_cpld_3_main_cpu_pwr.vme'
+        TOP_LC_CPLD = '/home/admin/img/as23-128h_cpld_1_sub_cpu_pwr.vme'
+        BOT_LC_CPLD = '/home/admin/img/as23-128h_cpld_2_sub_cpu_pwr.vme'
+        FAN_CPLD_REFRESH = '/home/admin/img/as23-128h_cpld_1_transfr_bmc.vme'
+        BASE_CPLD_REFRESH = '/home/admin/img/as23-128h_cpld_2_transfr_bmc.vme'
+
+
+7.run command : cd /home/admin/api_unittest
+8.run the test command:
+
+        - to run auto test without test cases that will cause CPU reboot
+                ./api_unittest
+
+        - to run manual test with test cases that will cause CPU reboot
+
+                1. Modify SKIP_REBOOT_CPU variable on unittest_config.py to False
+
+                2. Run following command
+
+                Note.For each step cpu will be reboot
+        
+                export BMC_TEST_PLATFORM=CEL  
+                ./api_unittest --run-tests test_bmcutil.TestBMCUtil.test_power_cycle_cpu   
+
+                export BMC_TEST_PLATFORM=CEL                                   
+                ./api_unittest --run-tests test_bmcutil.TestBMCUtil.test_power_cycle_system
+
+                export BMC_TEST_PLATFORM=CEL  
+                ./api_unittest --run-tests test_fwmgrutil_refresh.TestFirmwareRefreshUtil.test_firmware_refresh_fpga
+
+                export BMC_TEST_PLATFORM=CEL    
+                ./api_unittest --run-tests test_fwmgrutil_refresh.TestFirmwareRefreshUtil.test_firmware_refresh_bios
+
+                export BMC_TEST_PLATFORM=CEL     
+                ./api_unittest --run-tests test_fwmgrutil_refresh.TestFirmwareRefreshUtil.test_firmware_refresh_cpu_cpld   
+
+                export BMC_TEST_PLATFORM=CEL    
+                ./api_unittest --run-tests test_fwmgrutil_refresh.TestFirmwareRefreshUtil.test_firmware_refresh_fan_cpld     
+
+                export BMC_TEST_PLATFORM=CEL                                  
+                ./api_unittest --run-tests test_fwmgrutil_refresh.TestFirmwareRefreshUtil.test_firmware_refresh_base_cpld  
+                      
+                export BMC_TEST_PLATFORM=CEL  
+                ./api_unittest --run-tests test_fwmgrutil_refresh.TestFirmwareRefreshUtil.test_firmware_refresh_cpld1  
+
+                export BMC_TEST_PLATFORM=CEL        
+                ./api_unittest --run-tests test_fwmgrutil_refresh.TestFirmwareRefreshUtil.test_firmware_refresh_cpld2     
+
+                export BMC_TEST_PLATFORM=CEL  
+                ./api_unittest --run-tests test_fwmgrutil_refresh.TestFirmwareRefreshUtil.test_firmware_refresh_cpld
+

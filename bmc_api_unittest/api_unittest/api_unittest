@@ -1,0 +1,97 @@
+#!/usr/bin/env python
+import argparse
+import os
+import sys
+import unittest
+import unittest_config
+
+
+class RunTest:
+    def __init__(self):
+        self.testrunner = unittest.TextTestRunner(verbosity=2)
+        self.testloader = unittest.defaultTestLoader
+
+    def get_single_test(self, test_path):
+        return self.testloader.loadTestsFromName(test_path)
+
+    def run_single_test(self, test_path):
+        return self.testrunner.run(self.get_single_test(test_path))
+
+    def get_multiple_tests(self, test_paths):
+        return self.testloader.loadTestsFromNames(test_paths)
+
+    def run_multiple_tests(self, test_paths):
+        return self.testrunner.run(self.get_multiple_tests(test_paths))
+
+
+class Tests:
+    def __init__(self, start_dir=unittest_config.TEST_DIR, pattern="test*.py"):
+        self.tests_set = []
+        self.formatted_tests_set = []
+        self.start_dir = start_dir
+        self.pattern = pattern
+
+    def discover_tests(self):
+        suite = unittest.defaultTestLoader.discover(
+            self.start_dir, self.pattern)
+        return suite
+
+    def get_tests(self, suite):
+        if hasattr(suite, "__iter__"):
+            for item in suite:
+                self.get_tests(item)
+        else:
+            self.tests_set.append(str(suite))
+        return self.tests_set
+
+    def format_into_test_path(self, testitem):
+        test_string = testitem.split("(")
+        test_path = test_string[1].split(")")[0] + "." + test_string[0]
+        return test_path.strip()
+
+    def get_all_platform_tests(self):
+        for testitem in self.get_tests(self.discover_tests()):
+            if not testitem:
+                continue
+            self.formatted_tests_set.append(
+                self.format_into_test_path(testitem))
+        return self.formatted_tests_set
+
+
+def arg_parser():
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+
+    parser.add_argument("--run-tests", help="Run a single test.")
+    parser.add_argument(
+        "--path", help="The path of test case.", default=unittest_config.TEST_DIR)
+    parser.add_argument("--list-tests", action="store_true",
+                        help="List all available tests")
+
+    return parser.parse_args()
+
+
+def get_tests(start_dir, pattern=None):
+    if pattern:
+        return Tests(start_dir, pattern).get_all_platform_tests()
+    return Tests(start_dir).get_all_platform_tests()
+
+
+if __name__ == "__main__":
+    args = arg_parser()
+    pattern = None
+
+    sys.path.append(args.path)
+    if args.run_tests:
+        test_result = RunTest().run_single_test(args.run_tests)
+        rc = 0 if test_result.wasSuccessful() else 1
+        exit(rc)
+
+    test_paths = get_tests(args.path, pattern=pattern)
+    if args.list_tests:
+        for item in test_paths:
+            print(item)
+        exit(0)
+
+    RunTest().run_multiple_tests(test_paths)
