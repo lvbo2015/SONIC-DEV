@@ -19,7 +19,6 @@ try:
     from sonic_platform.fan import Fan
     from sonic_platform.psu import Psu
     from sonic_platform.component import Component
-    from sonic_platform.watchdog import Watchdog
     from sonic_platform.thermal import Thermal
     from sonic_platform.sfp import Sfp
     from sonic_platform.eeprom import Tlv
@@ -56,6 +55,7 @@ class Chassis(ChassisBase):
         for index in range(0, NUM_THERMAL):
             thermal = Thermal(index)
             self._thermal_list.append(thermal)
+        # sfp index start from 1
         for index in range(0, NUM_SFP):
             sfp = Sfp(index)
             self._sfp_list.append(sfp)
@@ -63,7 +63,6 @@ class Chassis(ChassisBase):
             component = Component(index)
             self._component_list.append(component)
 
-        self._watchdog = Watchdog()
         self._eeprom = Tlv()
 
     def __is_host(self):
@@ -146,3 +145,37 @@ class Chassis(ChassisBase):
             description = 'Unknown reason'
 
         return (reboot_cause, description)
+
+    def get_watchdog(self):
+        """
+        Retreives hardware watchdog device on this chassis
+        Returns:
+            An object derived from WatchdogBase representing the hardware
+            watchdog device
+        """
+        if self._watchdog is None:
+            from sonic_platform.watchdog import Watchdog
+            self._watchdog = Watchdog()
+
+        return self._watchdog
+
+    def get_sfp(self, index):
+        """
+        Retrieves sfp represented by (1-based) index <index>
+        Args:
+            index: An integer, the index (1-based) of the sfp to retrieve.
+            The index should be the sequence of a physical port in a chassis,
+            starting from 1.
+            For example, 1 for Ethernet0, 2 for Ethernet4 and so on.
+        Returns:
+            An object dervied from SfpBase representing the specified sfp
+        """
+        sfp = None
+
+        try:
+            # The index will start from 1
+            sfp = self._sfp_list[index-1]
+        except IndexError:
+            sys.stderr.write("SFP index {} out of range (1-{})\n".format(
+                             index, len(self._sfp_list)))
+        return sfp

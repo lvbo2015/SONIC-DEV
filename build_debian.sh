@@ -37,7 +37,7 @@ if [[ $CONFIGURED_ARCH == armhf || $CONFIGURED_ARCH == arm64 ]]; then
 else
     DOCKER_VERSION=5:18.09.8~3-0~debian-stretch
 fi
-LINUX_KERNEL_VERSION=4.9.0-9-2
+LINUX_KERNEL_VERSION=4.9.0-11-2
 
 ## Working directory to prepare the file system
 FILESYSTEM_ROOT=./fsroot
@@ -203,6 +203,22 @@ sudo LANG=C chroot $FILESYSTEM_ROOT apt-get update
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install docker-ce=${DOCKER_VERSION}
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y remove software-properties-common gnupg2
 
+if [ "$INSTALL_KUBERNETES" == "y" ]
+then
+    ## Install Kubernetes
+    echo '[INFO] Install kubernetes'
+    sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT curl -fsSL \
+        https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+        sudo LANG=C chroot $FILESYSTEM_ROOT apt-key add -
+    ## Check out the sources list update matches current Debian version
+    sudo cp files/image_config/kubernetes/kubernetes.list $FILESYSTEM_ROOT/etc/apt/sources.list.d/
+    sudo LANG=C chroot $FILESYSTEM_ROOT apt-get update
+    sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install kubeadm=${KUBERNETES_VERSION}-00
+    # kubeadm package auto install kubelet & kubectl
+else
+    echo '[INFO] Skipping Install kubernetes'
+fi
+
 ## Add docker config drop-in to specify dockerd command line
 sudo mkdir -p $FILESYSTEM_ROOT/etc/systemd/system/docker.service.d/
 ## Note: $_ means last argument of last command
@@ -316,10 +332,6 @@ fi
 
 ## Disable kexec supported reboot which was installed by default
 sudo sed -i 's/LOAD_KEXEC=true/LOAD_KEXEC=false/' $FILESYSTEM_ROOT/etc/default/kexec
-
-## Modifty ntp default configuration: disable initial jump (add -x), and disable
-## jump when time difference is greater than 1000 seconds (remove -g).
-sudo sed -i "s/NTPD_OPTS='-g'/NTPD_OPTS='-x'/" $FILESYSTEM_ROOT/etc/default/ntp
 
 ## Remove sshd host keys, and will regenerate on first sshd start
 sudo rm -f $FILESYSTEM_ROOT/etc/ssh/ssh_host_*_key*
