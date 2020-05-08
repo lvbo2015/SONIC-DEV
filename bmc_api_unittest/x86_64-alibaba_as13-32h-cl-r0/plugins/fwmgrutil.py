@@ -33,6 +33,7 @@ class FwMgrUtil(FwMgrUtilBase):
         self.bios_boot_uri = "/".join([self.BMC_REQ_BASE_URI, "misc/biosbootstatus"])
 
         self.fw_upgrade_logger_path = "/var/log/fw_upgrade.log"
+        self.cpld_ver_uri = "/".join([self.BMC_REQ_BASE_URI, "misc/cpldversion"])
 
         self.cpld_ver_info = {
             "CPLD_B": {
@@ -121,8 +122,8 @@ class FwMgrUtil(FwMgrUtilBase):
 
     def get_bmc_pass(self):
         if os.path.exists(self.bmc_pwd_path):
-            with open(self.bmc_pwd_path) as file:
-                data = file.read()
+            with open(self.bmc_pwd_path) as fh:
+                data = fh.read()
 
             key = "bmc"
             dec = []
@@ -167,7 +168,9 @@ class FwMgrUtil(FwMgrUtilBase):
     def post_to_bmc(self, uri, data, resp_required=True):
         try:
             resp = requests.post(uri, json=data)
-        except:
+        except Exception as e:
+            if not resp_required:
+                return True
             return False
 
         if not resp_required:
@@ -191,11 +194,10 @@ class FwMgrUtil(FwMgrUtilBase):
         scp_command = 'sudo scp -o StrictHostKeyChecking=no -o ' \
                       'UserKnownHostsFile=/dev/null -r %s root@240.1.1.1:/tmp/' \
                       % os.path.abspath(fw_path)
-        print scp_command
         child = pexpect.spawn(scp_command, timeout=120)
         expect_list = [pexpect.EOF, pexpect.TIMEOUT, \
                        "'s password:"]
-        i = child.expect(expect_list, timeout=30)
+        i = child.expect(expect_list, timeout=120)
         bmc_pwd = self.get_bmc_pass()
         if i == 2 and bmc_pwd != None:
             child.sendline(bmc_pwd)
@@ -213,13 +215,16 @@ class FwMgrUtil(FwMgrUtilBase):
         cpld_version_dict = {}
         for cpld_name, info in self.cpld_ver_info.items():
             if info["path"] == "bmc":
-                #cpld_ver = self.get_from_bmc(self.cpld_ver_uri)
-                cpld_ver = "None"
+                cpld_ver = self.get_from_bmc(self.cpld_ver_uri)
+                if cpld_ver and cpld_name in cpld_ver:
+                    cpld_ver_str = cpld_ver[cpld_name]
+                else:
+                    cpld_ver_str = "None"
             else:
                 cpld_ver = self.__get_register_value(info["path"], info["offset"])
 
-            cpld_ver_str = "None" if cpld_ver is "None" else \
-                           "{}.{}".format(int(cpld_ver[2], 16), int(cpld_ver[3], 16))
+                cpld_ver_str = "None" if cpld_ver is "None" else \
+                               "{}.{}".format(int(cpld_ver[2], 16), int(cpld_ver[3], 16))
             cpld_version_dict[cpld_name] = cpld_ver_str
 
         return cpld_version_dict
@@ -295,7 +300,6 @@ class FwMgrUtil(FwMgrUtilBase):
                  value should be one of 'master' or 'slave' or 'both'
         """
         fw_type = fw_type.lower()
-        upgrade_list = []
         bmc_pwd = self.get_bmc_pass()
         if not bmc_pwd and fw_type != "fpga":
             print("Failed: BMC credential not found")
@@ -348,7 +352,7 @@ class FwMgrUtil(FwMgrUtilBase):
 
             # Reboot BMC
             print("Upgrade BMC %s done, reboot it" % fw_extra_str)
-            if not self.post_to_bmc(self.bmc_reboot_uri, {}):
+            if not self.reboot_bmc():
                 print "Failed to reboot BMC after upgrade"
                 return False
 
@@ -428,8 +432,8 @@ class FwMgrUtil(FwMgrUtilBase):
         last_update_list = []
 
         if os.path.exists(self.fw_upgrade_logger_path):
-            with open(self.fw_upgrade_logger_path, 'r') as file:
-                lines = file.read().splitlines()
+            with open(self.fw_upgrade_logger_path, 'r') as fh:
+                lines = fh.read().splitlines()
 
             upgrade_txt = [i for i in reversed(
                 lines) if "last_upgrade_result" in i]
