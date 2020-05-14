@@ -40,13 +40,14 @@ class Chassis(ChassisBase):
         ChassisBase.__init__(self)
         self._api_helper = APIHelper()
         self.sfp_module_initialized = False
-        self.__initialize_components()
 
         if not self._api_helper.is_host():
-            self.__initialize_psu()
             self.__initialize_fan()
+            self.__initialize_psu()
             self.__initialize_eeprom()
             self.__initialize_thermals()
+        else:
+            self.__initialize_components()
 
     def __initialize_sfp(self):
         from sonic_platform.sfp import Sfp
@@ -114,7 +115,6 @@ class Chassis(ChassisBase):
     def get_reboot_cause(self):
         """
         Retrieves the cause of the previous reboot
-
         Returns:
             A tuple (string, string) where the first element is a string
             containing the cause of the previous reboot. This string must be

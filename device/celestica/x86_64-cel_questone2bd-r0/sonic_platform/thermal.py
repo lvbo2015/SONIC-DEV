@@ -21,7 +21,7 @@ except ImportError as e:
 SENSORS_HWMON_PATH = "/sys/bus/i2c/devices/i2c-{0}/{0}-00{1}"
 SENSORS_MUX_HWMON_PATH = "/sys/bus/i2c/devices/i2c-{0}/i2c-{1}/{1}-00{2}"
 
-DEFAULT_VAL = 0.0
+DEFAULT_VAL = 'N/A'
 
 class Thermal(ThermalBase):
     """Platform-specific Thermal class"""
@@ -84,7 +84,7 @@ class Thermal(ThermalBase):
                 temp_file_path = os.path.join(hwmon_path, temp_file)
                 raw_temp = self._api_helper.read_txt_file(temp_file_path)
                 temp = float(raw_temp)/1000
-                return "{:.3f}".format(temp)
+                return float("{:.3f}".format(temp))
             except:
                 continue
         return DEFAULT_VAL

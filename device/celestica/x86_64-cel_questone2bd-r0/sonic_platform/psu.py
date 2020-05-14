@@ -58,12 +58,22 @@ class Psu(PsuBase):
     def __init__(self, psu_index):
         PsuBase.__init__(self)
         self.index = psu_index
-        for fan_index in range(0, PSU_NUM_FAN[self.index]):
-            fan = Fan(fan_index, 0, is_psu_fan=True, psu_index=self.index)
-            self._fan_list.append(fan)
         self.hwmon_path = HWMON_PATH.format(
             PSU_INFO_MAPPING[self.index]["i2c_num"], PSU_INFO_MAPPING[self.index]["pmbus_reg"])
         self._api_helper = APIHelper()
+        for fan_index in range(0, PSU_NUM_FAN[self.index]):
+            fan = Fan(fan_index, 0, is_psu_fan=True, psu_index=self.index,
+                      psu_fan_direction=self.__get_fan_direction())
+            self._fan_list.append(fan)
+
+    def __get_fan_direction(self):
+        # DPS-1100FB = Intake
+        # DPS-1100AB = exhaust
+        eeprom_path = PSU_MUX_HWMON_PATH.format(
+            ((self.index) + 75), self.index+50)
+        fru_pn = self._api_helper.fru_decode_product_name(
+            self._api_helper.read_eeprom_sysfs(eeprom_path, "eeprom"))
+        return 0 if "FB" in fru_pn else 1
 
     def __search_file_by_contain(self, directory, search_str, file_start):
         for dirpath, dirnames, files in os.walk(directory):
@@ -208,9 +218,9 @@ class Psu(PsuBase):
         Returns:
             string: Model/part number of device
         """
-        temp_file = PSU_MUX_HWMON_PATH.format(
+        eeprom_path = PSU_MUX_HWMON_PATH.format(
             ((self.index) + 75), self.index+50)
-        return self._api_helper.fru_decode_product_model(self._api_helper.read_eeprom_sysfs(temp_file, "eeprom"))
+        return self._api_helper.fru_decode_product_model(self._api_helper.read_eeprom_sysfs(eeprom_path, "eeprom"))
 
     def get_serial(self):
         """
@@ -218,9 +228,9 @@ class Psu(PsuBase):
         Returns:
             string: Serial number of device
         """
-        temp_file = PSU_MUX_HWMON_PATH.format(
+        eeprom_path = PSU_MUX_HWMON_PATH.format(
             ((self.index) + 75), self.index+50)
-        return self._api_helper.fru_decode_product_serial(self._api_helper.read_eeprom_sysfs(temp_file, "eeprom"))
+        return self._api_helper.fru_decode_product_serial(self._api_helper.read_eeprom_sysfs(eeprom_path, "eeprom"))
 
     def get_status(self):
         """

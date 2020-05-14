@@ -30,11 +30,14 @@ FAN_MAX_PWM = 255
 FAN_MAX_RPM = FAN_MAX_PWM * FAN_RPM_MULTIPLIER
 FAN_PRESENT_SYSFS = "fan{}_present"
 FAN_PWM_SYSFS = "fan{}_pwm"
+FAN_INPUT_SYSFS = "fan{}_input"
 FAN_DIRECTION_SYSFS = "fan{}_dir"
 FAN_LED_SYSFS = "fan{}_led"
 FAN_LED_GREEN_CMD = "0x1"
 FAN_LED_RED_CMD = "0x2"
 FAN_LED_OFF_CMD = "0x3"
+FAN_FRONT_MAX_RPM = 29700
+FAN_REAR_MAX_RPM = 24700
 
 PSU_FAN_MAX_RPM = 30000
 PSU_HWMON_PATH = "/sys/bus/i2c/devices/i2c-{0}/{0}-00{1}/hwmon"
@@ -56,7 +59,7 @@ PSU_MUX_HWMON_PATH = "/sys/bus/i2c/devices/i2c-68/i2c-{0}/{0}-0050/"
 class Fan(FanBase):
     """Platform-specific Fan class"""
 
-    def __init__(self, fan_tray_index, fan_index=0, is_psu_fan=False, psu_index=0):
+    def __init__(self, fan_tray_index, fan_index=0, is_psu_fan=False, psu_index=0, psu_fan_direction=0):
         self.fan_index = fan_index
         self.fan_tray_index = fan_tray_index
         self.is_psu_fan = is_psu_fan
@@ -64,6 +67,7 @@ class Fan(FanBase):
             self.psu_index = psu_index
             self.psu_hwmon_path = PSU_HWMON_PATH.format(
                 PSU_I2C_MAPPING[self.psu_index]["i2c_num"], PSU_I2C_MAPPING[self.psu_index]["pmbus_reg"])
+            self.psu_fan_direction = self.FAN_DIRECTION_EXHAUST if psu_fan_direction else self.FAN_DIRECTION_INTAKE
         self._api_helper = APIHelper()
         self.index = self.fan_tray_index * 2 + self.fan_index
 
@@ -91,7 +95,7 @@ class Fan(FanBase):
             depending on fan direction
         """
         if self.is_psu_fan:
-            return self.FAN_DIRECTION_EXHAUST
+            return self.psu_fan_direction
 
         fan_direction_val = self.__read_fan_sysfs(
             FAN_DIRECTION_SYSFS.format(self.fan_tray_index+1))
@@ -109,6 +113,7 @@ class Fan(FanBase):
             M = 150
             Max = 38250 RPM
         """
+        speed_rpm = 0
         if self.is_psu_fan:
             speed = 0
             fan_name = "fan{}_input"
@@ -121,13 +126,11 @@ class Fan(FanBase):
                     hwmon, fan_name.format(self.fan_index+1))
                 speed_rpm = self._api_helper.read_one_line_file(fan_path)
                 speed = int(float(speed_rpm) / PSU_FAN_MAX_RPM * 100)
-
-            return speed
-
-        speed_raw = self.__read_fan_sysfs(
-            FAN_PWM_SYSFS.format(self.fan_tray_index+1))
-        speed_val = int(speed_raw, 16)
-        speed = int(float(speed_val)/FAN_MAX_PWM * 100)
+        else:
+            speed_rpm = self.__read_fan_sysfs(
+                FAN_INPUT_SYSFS.format(self.fan_tray_index+1))
+            fan_max_rpm = FAN_FRONT_MAX_RPM if "F" in self.get_name() else FAN_REAR_MAX_RPM
+            speed = int(float(speed_rpm) / fan_max_rpm * 100)
 
         return speed
 
@@ -144,8 +147,7 @@ class Fan(FanBase):
             0   : when PWM mode is use
             pwm : when pwm mode is not use
         """
-        target = 0
-        return target
+        return "N/A"
 
     def get_speed_tolerance(self):
         """
@@ -267,8 +269,7 @@ class Fan(FanBase):
             string: Model/part number of device
         """
         if self.is_psu_fan:
-            temp_file = PSU_MUX_HWMON_PATH.format((self.fan_tray_index+1) + 75)
-            return self._api_helper.fru_decode_product_model(self._api_helper.read_eeprom_sysfs(temp_file, "eeprom"))
+            return 'N/A'
 
         temp_file = FAN_MUX_HWMON_PATH.format((self.fan_tray_index+1) * 2)
         return self._api_helper.fru_decode_product_model(self._api_helper.read_eeprom_sysfs(temp_file, "eeprom"))
@@ -280,8 +281,7 @@ class Fan(FanBase):
             string: Serial number of device
         """
         if self.is_psu_fan:
-            temp_file = PSU_MUX_HWMON_PATH.format((self.fan_tray_index+1) + 75)
-            return self._api_helper.fru_decode_product_serial(self._api_helper.read_eeprom_sysfs(temp_file, "eeprom"))
+            return 'N/A'
 
         temp_file = FAN_MUX_HWMON_PATH.format((self.fan_tray_index+1) * 2)
         return self._api_helper.fru_decode_product_serial(self._api_helper.read_eeprom_sysfs(temp_file, "eeprom"))
