@@ -207,7 +207,7 @@ class FwMgrUtil(FwMgrUtilBase):
             elif i == 0:
                 return True
             else:
-                print "Failed to scp %s to BMC, index %d, retry %d" % (fw_path, i, d)
+                print "Failed to scp %s to BMC, index %d, retry %d" % (fw_path, i, n)
                 continue
         print "Failed to scp %s to BMC, index %d" % (fw_path, i)
         return False

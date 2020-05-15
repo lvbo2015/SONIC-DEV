@@ -1,6 +1,16 @@
 # clean
-rm -rf /home/admin/api_unittest
-rm -rf recovery/*
+if [ -e /home/admin/api_unittest ];then
+    rm -rf /home/admin/api_unittest
+fi
+
+if [ -d recovery ];then
+    rm -rf recovery/*
+else
+    if [ -f recovery ];then
+        rm recovery
+    fi
+    mkdir recovery
+fi
 
 # backup
 mv /usr/share/sonic/device/x86_64-alibaba_as* recovery/
