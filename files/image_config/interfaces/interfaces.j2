@@ -44,7 +44,7 @@ iface eth0 {{ 'inet' if prefix | ipv4 else 'inet6' }} static
 {# TODO: COPP policy type rules #}
 {% endfor %}
 {% else %}
-iface eth0 inet manual
+iface eth0 inet static
 {% endif %}
 #
 {% endblock mgmt_interface %}
