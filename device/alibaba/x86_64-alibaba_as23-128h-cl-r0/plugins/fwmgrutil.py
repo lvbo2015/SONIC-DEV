@@ -57,7 +57,7 @@ class FwMgrUtil(FwMgrUtilBase):
                 "offset": "0x00"
             },
             "CPLD_4": {
-                "path": "/sys/devices/platform/%s.switchboard/CPLD1/getreg" % self.platform_name,
+                "path": "/sys/devices/platform/%s.switchboard/CPLD4/getreg" % self.platform_name,
                 "offset": "0x00"
             },
             "CPLD_FAN": {
