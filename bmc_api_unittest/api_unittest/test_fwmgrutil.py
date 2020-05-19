@@ -167,6 +167,25 @@ class TestFirmwareUtil(unittest.TestCase):
         self.assertEqual(ret, True)
         self.__wait_bmc_restful()
 
+        # switch to master bmc
+        ret = self.platform_fwmgrutil.set_bmc_boot_flash("master")
+        self.assertEqual(ret, True)
+        if not ret:
+            return
+
+        self.platform_fwmgrutil.reboot_bmc()
+        self.__wait_bmc_restful()
+
+        ret = self.platform_fwmgrutil.get_running_bmc()
+        self.assertEqual(ret, 'master')
+        # master pingpong mode
+        ret = self.platform_fwmgrutil.firmware_upgrade(
+            "bmc", unittest_config.BMC_IMAGE_PATH, "pingpong")
+        self.assertEqual(ret, True)
+        self.__wait_bmc_restful()
+        ret = self.platform_fwmgrutil.get_running_bmc()
+        self.assertEqual(ret, 'slave')
+
     def test_program_bmc_slave(self):
         # switch to slave bmc
         ret = self.platform_fwmgrutil.set_bmc_boot_flash("slave")
@@ -197,6 +216,25 @@ class TestFirmwareUtil(unittest.TestCase):
             "bmc", unittest_config.BMC_IMAGE_PATH, "both")
         self.assertEqual(ret, True)
         self.__wait_bmc_restful()
+
+        # switch to slave bmc
+        ret = self.platform_fwmgrutil.set_bmc_boot_flash("slave")
+        self.assertEqual(ret, True)
+        if not ret:
+            return
+
+        self.platform_fwmgrutil.reboot_bmc()
+        self.__wait_bmc_restful()
+
+        ret = self.platform_fwmgrutil.get_running_bmc()
+        self.assertEqual(ret, 'slave')
+        # slave pingpong mode
+        ret = self.platform_fwmgrutil.firmware_upgrade(
+            "bmc", unittest_config.BMC_IMAGE_PATH, "pingpong")
+        self.assertEqual(ret, True)
+        self.__wait_bmc_restful()
+        ret = self.platform_fwmgrutil.get_running_bmc()
+        self.assertEqual(ret, 'master')
 
     def test_get_bios_next_boot(self):
         ret = self.platform_fwmgrutil.get_bios_next_boot()
