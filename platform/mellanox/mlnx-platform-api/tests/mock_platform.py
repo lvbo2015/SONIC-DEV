@@ -1,13 +1,24 @@
 class MockFan:
+    speed = 60
     def __init__(self):
         self.presence = True
-        self.speed = 60
+        self.name = None
+        self.status = True
 
     def get_presence(self):
         return self.presence
 
     def set_speed(self, speed):
-        self.speed = speed
+        MockFan.speed = speed
+
+    def get_status(self):
+        return self.status
+
+    def get_target_speed(self):
+        return MockFan.speed
+
+    def get_name(self):
+        return self.name
 
 
 class MockPsu:
@@ -20,6 +31,9 @@ class MockPsu:
 
     def get_powergood_status(self):
         return self.powergood
+
+    def get_all_fans(self):
+        return []
 
 
 class MockChassis:

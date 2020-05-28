@@ -12,10 +12,10 @@ try:
     from sonic_platform_base.chassis_base import ChassisBase
     from sonic_platform_base.component_base import ComponentBase
     from sonic_device_util import get_machine_info
+    from sonic_device_util import get_platform_info
     from sonic_daemon_base.daemon_base import Logger
     from os import listdir
     from os.path import isfile, join
-    from glob import glob
     import sys
     import io
     import re
@@ -29,6 +29,7 @@ MAX_SELECT_DELAY = 3600
 MLNX_NUM_PSU = 2
 
 GET_HWSKU_CMD = "sonic-cfggen -d -v DEVICE_METADATA.localhost.hwsku"
+GET_PLATFORM_CMD = "sonic-cfggen -d -v DEVICE_METADATA.localhost.platform"
 
 EEPROM_CACHE_ROOT = '/var/cache/sonic/decode-syseeprom'
 EEPROM_CACHE_FILE = 'syseeprom_cache'
@@ -49,8 +50,8 @@ logger = Logger()
 
 # magic code defnition for port number, qsfp port position of each hwsku
 # port_position_tuple = (PORT_START, QSFP_PORT_START, PORT_END, PORT_IN_BLOCK, EEPROM_OFFSET)
-hwsku_dict_port = {'ACS-MSN2010': 3, 'ACS-MSN2100': 1, 'ACS-MSN2410': 2, 'ACS-MSN2700': 0, 'Mellanox-SN2700': 0, 'Mellanox-SN2700-D48C8': 0, 'LS-SN2700':0, 'ACS-MSN2740': 0, 'ACS-MSN3700': 0, 'ACS-MSN3700C': 0, 'ACS-MSN3800': 4, 'Mellanox-SN3800-D112C8': 4, 'ACS-MSN4700': 0}
-port_position_tuple_list = [(0, 0, 31, 32, 1), (0, 0, 15, 16, 1), (0, 48, 55, 56, 1), (0, 18, 21, 22, 1), (0, 0, 63, 64, 1)]
+hwsku_dict_port = {'ACS-MSN2010': 3, 'ACS-MSN2100': 1, 'ACS-MSN2410': 2, 'ACS-MSN2700': 0, 'Mellanox-SN2700': 0, 'Mellanox-SN2700-D48C8': 0, 'LS-SN2700':0, 'ACS-MSN2740': 0, 'ACS-MSN3700': 0, 'ACS-MSN3700C': 0, 'ACS-MSN3800': 4, 'Mellanox-SN3800-D112C8': 4, 'ACS-MSN4700': 0, 'ACS-MSN3420': 5, 'ACS-MSN4600C': 4}
+port_position_tuple_list = [(0, 0, 31, 32, 1), (0, 0, 15, 16, 1), (0, 48, 55, 56, 1), (0, 18, 21, 22, 1), (0, 0, 63, 64, 1), (0, 48, 59, 60, 1)]
 
 class Chassis(ChassisBase):
     """Platform-specific Chassis class"""
@@ -60,11 +61,14 @@ class Chassis(ChassisBase):
 
         # Initialize SKU name
         self.sku_name = self._get_sku_name()
+
         mi = get_machine_info()
         if mi is not None:
             self.name = mi['onie_platform']
+            self.platform_name = get_platform_info(mi)
         else:
             self.name = self.sku_name
+            self.platform_name = self._get_platform_name()
 
         # move the initialization of each components to their dedicated initializer
         # which will be called from platform
@@ -84,36 +88,29 @@ class Chassis(ChassisBase):
         # Initialize PSU list
         self.psu_module = Psu
         for index in range(MLNX_NUM_PSU):
-            psu = Psu(index, self.sku_name)
+            psu = Psu(index, self.platform_name)
             self._psu_list.append(psu)
 
 
     def initialize_fan(self):
+        from .device_data import DEVICE_DATA
         from sonic_platform.fan import Fan
-        from sonic_platform.fan import FAN_PATH
-        self.fan_module = Fan
-        self.fan_path = FAN_PATH
-        # Initialize FAN list
-        multi_rotor_in_drawer = False
-        num_of_fan, num_of_drawer = self._extract_num_of_fans_and_fan_drawers()
-        multi_rotor_in_drawer = num_of_fan > num_of_drawer
+        from .fan_drawer import RealDrawer, VirtualDrawer
 
-        # Fan's direction isn't supported on spectrum 1 devices for now
-        mst_dev_list = glob(MST_DEVICE_NAME_PATTERN)
-        if not mst_dev_list:
-            raise RuntimeError("Can't get chip type due to {} not found".format(MST_DEVICE_NAME_PATTERN))
-        m = re.search(MST_DEVICE_RE_PATTERN, mst_dev_list[0])
-        if m.group(1) == SPECTRUM1_CHIP_ID:
-            has_fan_dir = False
-        else:
-            has_fan_dir = True
-
-        for index in range(num_of_fan):
-            if multi_rotor_in_drawer:
-                fan = Fan(has_fan_dir, index, index/2, False, self.sku_name)
-            else:
-                fan = Fan(has_fan_dir, index, index, False, self.sku_name)
-            self._fan_list.append(fan)
+        fan_data = DEVICE_DATA[self.platform_name]['fans']
+        drawer_num = fan_data['drawer_num']
+        drawer_type = fan_data['drawer_type']
+        fan_num_per_drawer = fan_data['fan_num_per_drawer']
+        drawer_ctor = RealDrawer if drawer_type == 'real' else VirtualDrawer
+        fan_index = 0
+        for drawer_index in range(drawer_num):
+            drawer = drawer_ctor(drawer_index, fan_data)
+            self._fan_drawer_list.append(drawer)
+            for index in range(fan_num_per_drawer):
+                fan = Fan(fan_index, drawer)
+                fan_index += 1
+                drawer._fan_list.append(fan)
+                self._fan_list.append(fan)
 
 
     def initialize_sfp(self):
@@ -241,6 +238,12 @@ class Chassis(ChassisBase):
 
     def _get_sku_name(self):
         p = subprocess.Popen(GET_HWSKU_CMD, shell=True, stdout=subprocess.PIPE)
+        out, err = p.communicate()
+        return out.rstrip('\n')
+
+
+    def _get_platform_name(self):
+        p = subprocess.Popen(GET_PLATFORM_CMD, shell=True, stdout=subprocess.PIPE)
         out, err = p.communicate()
         return out.rstrip('\n')
 
