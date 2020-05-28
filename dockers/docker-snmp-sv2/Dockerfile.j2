@@ -1,5 +1,5 @@
-{% from "dockers/dockerfile-macros.j2" import install_debian_packages, install_python_wheels, copy_files %}
-FROM docker-config-engine-stretch
+{% from "dockers/dockerfile-macros.j2" import install_debian_packages, install_python3_wheels, copy_files %}
+FROM docker-config-engine-buster
 
 ARG docker_container_name
 RUN [ -f /etc/rsyslog.conf ] && sed -ri "s/%syslogtag%/$docker_container_name#%syslogtag%/;" /etc/rsyslog.conf
@@ -11,18 +11,12 @@ ENV PYTHONOPTIMIZE 1
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Update apt's cache of available packages
-# Install curl so we can download and install pip later
-# Also install major root CA certificates for curl to reference
-# Install gcc which is required for installing hiredis
-# Install libdpkg-perl which is required for python3.6-3.6.0 as one of its specs i.e. no-pie-compile.specs
-# The file referenced (`/usr/share/dpkg/no-pie-compile.specs`) is in the `libdpkg-perl` package on Debian
+# Install make/gcc which is required for installing hiredis
 RUN apt-get update   && \
     apt-get install -y  \
-        curl            \
-        ca-certificates \
+        python3-dev     \
         gcc             \
         make            \
-        libdpkg-perl    \
         ipmitool
 
 {% if docker_snmp_sv2_debs.strip() -%}
@@ -34,7 +28,7 @@ RUN apt-get update   && \
 {%- endif %}
 
 # Fix for hiredis compilation issues for ARM
-# python will throw for missing locale 
+# python will throw for missing locale
 RUN apt-get install -y locales
 RUN locale-gen "en_US.UTF-8"
 RUN dpkg-reconfigure --frontend noninteractive locales
@@ -43,11 +37,11 @@ RUN sed -i '/^#.* en_US.* /s/^#//' /etc/locale.gen
 RUN locale-gen
 
 # Install up-to-date version of pip
-RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
+RUN pip3 install --no-cache-dir setuptools wheel
 
 # Install pyyaml dependency for use by some plugins
 # Install smbus dependency for use by some plugins
-RUN python3.6 -m pip install --no-cache-dir \
+RUN python3 -m pip install --no-cache-dir \
         hiredis                             \
         pyyaml                              \
         smbus
@@ -57,24 +51,16 @@ RUN python3.6 -m pip install --no-cache-dir \
 {{ copy_files("python-wheels/", docker_snmp_sv2_whls.split(' '), "/python-wheels/") }}
 
 # Install locally-built Python wheel dependencies
-{{ install_python_wheels(docker_snmp_sv2_whls.split(' ')) }}
+{{ install_python3_wheels(docker_snmp_sv2_whls.split(' ')) }}
 {% endif %}
 
-RUN python3.6 -m sonic_ax_impl install
+RUN python3 -m sonic_ax_impl install
 
 # Clean up
 RUN apt-get -y purge     \
-        libpython3.6-dev \
-        libpython3.6     \
-        curl             \
+        python3-dev      \
         gcc              \
-        make             \
-        libdpkg-perl     \
-        # Note: these packages should be removed with autoremove but actually not, so explicitly purged
-        libldap-2.4-2    \
-        libsasl2-2       \
-        libsasl2-modules \
-        libsasl2-modules-db && \
+        make                && \
     apt-get clean -y        && \
     apt-get autoclean -y    && \
     apt-get autoremove -y --purge && \
