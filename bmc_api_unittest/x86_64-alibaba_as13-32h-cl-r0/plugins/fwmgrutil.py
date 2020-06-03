@@ -124,6 +124,17 @@ class FwMgrUtil(FwMgrUtilBase):
             print(log_message)
         return logging.info(log_message)
 
+    def old_bmc_set_next_boot(self,flash):
+        #set_bmc_boot_flash
+        json_tmp = dict()
+        json_tmp["data"] = "source /usr/local/bin/openbmc-utils.sh;bmc_reboot %s" % flash
+        requests.post(self.old_raw_cmd_uri, json=json_tmp)
+
+        # reboot
+        json_tmp = dict()
+        json_tmp["data"] = "source /usr/local/bin/openbmc-utils.sh;bmc_reboot reboot"
+        requests.post(self.old_raw_cmd_uri, json=json_tmp)
+        return
 
     def old_bmc_get_version(self):
 
@@ -173,7 +184,7 @@ class FwMgrUtil(FwMgrUtilBase):
         flash = fw_extra_str if fw_extra_str in [
             "master", "slave", "both"] else "both"
         if fw_extra_str == "pingpong":
-            flash = "slave"
+            flash = "master" if current_bmc == "slave" else "slave"
         json_data["flash"] = flash
 
         # Install BMC
@@ -196,19 +207,16 @@ class FwMgrUtil(FwMgrUtilBase):
                 print("Switch to boot from %s" % flash)
 
                 #set_bmc_boot_flash
-                json_tmp = dict()
-                json_tmp["data"] = "source /usr/local/bin/openbmc-utils.sh;bmc_reboot %s" % flash
-                requests.post(self.old_raw_cmd_uri, json=json_tmp)
-
-                # reboot
-                json_tmp = dict()
-                json_tmp["data"] = "source /usr/local/bin/openbmc-utils.sh;bmc_reboot reboot"
-                r = requests.post(self.old_raw_cmd_uri, json=json_tmp)
+                self.old_bmc_set_next_boot(flash)
             else:
-                reboot_dict = {}
-                reboot_dict["reboot"] = "yes"
-                r = requests.post(self.old_bmc_info_uri, json=reboot_dict)
-
+                # Change boot flash if required
+                if current_bmc != flash and flash != "both":
+                    # Set desired boot flash
+                    self.old_bmc_set_next_boot(flash)
+                else:
+                    reboot_dict = {}
+                    reboot_dict["reboot"] = "yes"
+                    r = requests.post(self.old_bmc_info_uri, json=reboot_dict)
         elif r.status_code == 200:
             print("Fail, message = %s" % r.json().get('result'))
             return False
