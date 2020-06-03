@@ -32,6 +32,10 @@ class FwMgrUtil(FwMgrUtilBase):
         self.fw_refresh_uri = "/".join([self.BMC_REQ_BASE_URI, "firmware/refresh"])
         self.bios_boot_uri = "/".join([self.BMC_REQ_BASE_URI, "misc/biosbootstatus"])
 
+        # BMC 1.3.8
+        self.old_raw_cmd_uri = "http://240.1.1.1:8080/api/sys/raw"
+        self.old_bmc_info_uri = "http://240.1.1.1:8080/api/sys/bmc"
+
         self.fw_upgrade_logger_path = "/var/log/fw_upgrade.log"
         self.cpld_ver_uri = "/".join([self.BMC_REQ_BASE_URI, "misc/cpldversion"])
 
@@ -119,6 +123,103 @@ class FwMgrUtil(FwMgrUtilBase):
         if header != "last_upgrade_result":
             print(log_message)
         return logging.info(log_message)
+
+
+    def old_bmc_get_version(self):
+
+        bmc_version = None
+        bmc_version_key = "OpenBMC Version"
+        bmc_info_req = requests.get(self.old_bmc_info_uri, timeout=60)
+        if bmc_info_req.status_code == 200:
+            bmc_info_json = bmc_info_req.json()
+            bmc_info = bmc_info_json.get('Information')
+            bmc_version = bmc_info.get(bmc_version_key)
+        return str(bmc_version)
+
+    def old_bmc_upgrade(self, fw_path, fw_extra):
+
+        fw_extra_str = str(fw_extra).lower()
+
+        json_data = dict()
+        json_data["path"] = "admin@240.1.1.2:%s" % fw_path
+        json_data["password"] = "admin"
+
+        # get running bmc
+        json_tmp = dict()
+        json_tmp["data"] = "/usr/local/bin/boot_info.sh"
+        r = requests.post(self.old_raw_cmd_uri, json=json_tmp)
+        current_bmc = None
+        if r.status_code == 200:
+            boot_info_list = r.json().get('result')
+            for boot_info_raw in boot_info_list:
+                boot_info = boot_info_raw.split(":")
+                if "Current Boot Code Source" in boot_info[0]:
+                    flash = "master" if "master "in boot_info[1].lower() else "slave"
+                    current_bmc = flash
+
+        if not current_bmc:
+            print("Fail, message = Unable to detech current bmc")
+            return False
+
+        # umount /mnt/data
+        umount_json = dict()
+        umount_json["data"] = "pkill rsyslogd; umount -f /mnt/data/"
+        r = requests.post(self.old_raw_cmd_uri, json=umount_json)
+        if r.status_code != 200:
+            print("Fail, message = Unable to umount /mnt/data")
+            return False
+
+        # Set flash
+        flash = fw_extra_str if fw_extra_str in [
+            "master", "slave", "both"] else "both"
+        if fw_extra_str == "pingpong":
+            flash = "slave"
+        json_data["flash"] = flash
+
+        # Install BMC
+        if flash == "both":
+            print("Install BMC as master mode")
+            json_data["flash"] = "master"
+            r = requests.post(self.old_bmc_info_uri, json=json_data)
+            if r.status_code != 200 or 'success' not in r.json().get('result'):
+                cause = str(r.status_code) if r.status_code != 200 else r.json().get('result')
+                print("Fail, message = BMC API report error code %d" % r.cause)
+                return False
+            json_data["flash"] = "slave"
+
+        print("Install BMC as %s mode" % json_data["flash"])
+        r = requests.post(self.old_bmc_info_uri, json=json_data)
+        if r.status_code == 200 and 'success' in r.json().get('result'):
+
+            if fw_extra_str == "pingpong":
+                flash = "master" if current_bmc == "slave" else "slave"
+                print("Switch to boot from %s" % flash)
+
+                #set_bmc_boot_flash
+                json_tmp = dict()
+                json_tmp["data"] = "source /usr/local/bin/openbmc-utils.sh;bmc_reboot %s" % flash
+                requests.post(self.old_raw_cmd_uri, json=json_tmp)
+
+                # reboot
+                json_tmp = dict()
+                json_tmp["data"] = "source /usr/local/bin/openbmc-utils.sh;bmc_reboot reboot"
+                r = requests.post(self.old_raw_cmd_uri, json=json_tmp)
+            else:
+                reboot_dict = {}
+                reboot_dict["reboot"] = "yes"
+                r = requests.post(self.old_bmc_info_uri, json=reboot_dict)
+
+        elif r.status_code == 200:
+            print("Fail, message = %s" % r.json().get('result'))
+            return False
+        else:
+            print("Fail, message = Unable to install BMC image")
+            return False
+
+        print("Done")
+
+        return True
+
 
     def get_bmc_pass(self):
         if os.path.exists(self.bmc_pwd_path):
@@ -314,6 +415,10 @@ class FwMgrUtil(FwMgrUtilBase):
                 print("Failed: Unable to upload BMC image to BMC")
                 return False
             print("Upload bmc image %s to BMC done" % fw_path)
+            cur_bmc_ver = self.get_bmc_version()
+            chk_old_bmc = self.old_bmc_get_version()
+            if cur_bmc_ver == 'N/A' and chk_old_bmc:
+                return self.old_bmc_upgrade(fw_path, fw_extra)
 
             # Fill json param, "Name", "Path", "Flash"
             image_name = os.path.basename(fw_path)

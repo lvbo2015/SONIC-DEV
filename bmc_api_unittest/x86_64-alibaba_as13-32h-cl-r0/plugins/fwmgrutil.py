@@ -139,12 +139,10 @@ class FwMgrUtil(FwMgrUtilBase):
     def old_bmc_upgrade(self, fw_path, fw_extra):
 
         fw_extra_str = str(fw_extra).lower()
-        filename_w_ext = os.path.basename(fw_path)
-        bmc_pwd = self.get_bmc_pass()
 
         json_data = dict()
-        json_data["path"] = "root@127.0.0.1:/tmp/%s" % filename_w_ext
-        json_data["password"] = bmc_pwd
+        json_data["path"] = "admin@240.1.1.2:%s" % fw_path
+        json_data["password"] = "admin"
 
         # get running bmc
         json_tmp = dict()
@@ -163,12 +161,12 @@ class FwMgrUtil(FwMgrUtilBase):
             print("Fail, message = Unable to detech current bmc")
             return False
 
-        # umount /data/mnt
+        # umount /mnt/data
         umount_json = dict()
         umount_json["data"] = "pkill rsyslogd; umount -f /mnt/data/"
         r = requests.post(self.old_raw_cmd_uri, json=umount_json)
         if r.status_code != 200:
-            print("Fail, message = Unable to umount /data/mnt")
+            print("Fail, message = Unable to umount /mnt/data")
             return False
 
         # Set flash
@@ -417,7 +415,6 @@ class FwMgrUtil(FwMgrUtilBase):
                 print("Failed: Unable to upload BMC image to BMC")
                 return False
             print("Upload bmc image %s to BMC done" % fw_path)
-
             cur_bmc_ver = self.get_bmc_version()
             chk_old_bmc = self.old_bmc_get_version()
             if cur_bmc_ver == 'N/A' and chk_old_bmc:
