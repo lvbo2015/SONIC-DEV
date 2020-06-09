@@ -28,7 +28,6 @@ NUM_COMPONENT = 7
 REBOOT_CAUSE_REG = "0xA106"
 TLV_EEPROM_I2C_BUS = 0
 TLV_EEPROM_I2C_ADDR = 56
-
 BASE_CPLD_PLATFORM = "questone2bd.cpldb"
 BASE_GETREG_PATH = "/sys/devices/platform/{}/getreg".format(BASE_CPLD_PLATFORM)
 
@@ -40,11 +39,11 @@ class Chassis(ChassisBase):
         ChassisBase.__init__(self)
         self._api_helper = APIHelper()
         self.sfp_module_initialized = False
+        self.__initialize_eeprom()
 
         if not self._api_helper.is_host():
             self.__initialize_fan()
             self.__initialize_psu()
-            self.__initialize_eeprom()
             self.__initialize_thermals()
         else:
             self.__initialize_components()
@@ -122,33 +121,19 @@ class Chassis(ChassisBase):
             is "REBOOT_CAUSE_HARDWARE_OTHER", the second string can be used
             to pass a description of the reboot cause.
         """
-
-        raw_cause = self._api_helper.get_register_value(
+        hx_cause = self._api_helper.get_register_value(
             BASE_GETREG_PATH, REBOOT_CAUSE_REG)
-        hx_cause = raw_cause.lower()
-        reboot_cause = {
-            "0x00": self.REBOOT_CAUSE_HARDWARE_OTHER,
-            "0x11": self.REBOOT_CAUSE_POWER_LOSS,
-            "0x22": self.REBOOT_CAUSE_NON_HARDWARE,
-            "0x33": self.REBOOT_CAUSE_HARDWARE_OTHER,
-            "0x44": self.REBOOT_CAUSE_NON_HARDWARE,
-            "0x55": self.REBOOT_CAUSE_NON_HARDWARE,
-            "0x66": self.REBOOT_CAUSE_WATCHDOG,
-            "0x77": self.REBOOT_CAUSE_NON_HARDWARE
-        }.get(hx_cause, self.REBOOT_CAUSE_HARDWARE_OTHER)
 
-        description = {
-            "0x00": "Unknown reason",
-            "0x11": "The last reset is Power on reset",
-            "0x22": "The last reset is soft-set CPU warm reset",
-            "0x33": "The last reset is soft-set CPU cold reset",
-            "0x44": "The last reset is CPU warm reset",
-            "0x55": "The last reset is CPU cold reset",
-            "0x66": "The last reset is watchdog reset",
-            "0x77": "The last reset is power cycle reset"
-        }.get(hx_cause, "Unknown reason")
-
-        return (reboot_cause, description)
+        return {
+            "0x00": (self.REBOOT_CAUSE_HARDWARE_OTHER, 'Unknown'),
+            "0x11": (self.REBOOT_CAUSE_POWER_LOSS, 'The last reset is Power on reset'),
+            "0x22": (self.REBOOT_CAUSE_HARDWARE_OTHER, 'The last reset is soft-set CPU warm reset'),
+            "0x33": (self.REBOOT_CAUSE_HARDWARE_OTHER, 'The last reset is soft-set CPU cold reset'),
+            "0x44": (self.REBOOT_CAUSE_HARDWARE_OTHER, 'The last reset is CPU warm reset'),
+            "0x55": (self.REBOOT_CAUSE_HARDWARE_OTHER, 'The last reset is CPU cold reset'),
+            "0x66": (self.REBOOT_CAUSE_WATCHDOG, 'The last reset is watchdog reset'),
+            "0x77": (self.REBOOT_CAUSE_HARDWARE_OTHER, 'The last reset is power cycle reset'),
+        }.get(hx_cause.lower(), (self.REBOOT_CAUSE_HARDWARE_OTHER, 'Unknown'))
 
     ##############################################################
     ######################## SFP methods #########################
