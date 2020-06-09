@@ -152,7 +152,10 @@ sudo cp $IMAGE_CONFIGS/poap/poap.service $FILESYSTEM_ROOT/etc/systemd/system/
 sudo LANG=C chroot $FILESYSTEM_ROOT systemctl enable poap.service
 
 # Copy diag_app configuration files and templates
-sudo cp $IMAGE_CONFIGS/diag_app/Ali_Diag_V2.0.4.deb $FILESYSTEM_ROOT/home/
+sudo cp $IMAGE_CONFIGS/diag_app/Ali_Diag_V2.0.6.deb $FILESYSTEM_ROOT/home/
+
+# Copy logCollect.sh
+sudo cp $IMAGE_CONFIGS/diag_app/logCollect.sh $FILESYSTEM_ROOT/usr/bin/
 
 # Copy port_led configuration files and templates
 sudo cp $IMAGE_CONFIGS/port_led/port-led $FILESYSTEM_ROOT/usr/bin/

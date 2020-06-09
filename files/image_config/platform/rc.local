@@ -90,8 +90,7 @@ update_mgmt_interface_macaddr() {
 
 diag_install() {
     echo "Diag install start ..."
-    sleep 200
-    dpkg -i /home/Ali_Diag_V2.0.4.deb
+    dpkg -i /home/Ali_Diag_V2.0.6.deb
 }
 
 boot_action() {
