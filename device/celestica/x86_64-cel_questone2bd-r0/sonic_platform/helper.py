@@ -151,7 +151,7 @@ class APIHelper():
 
     def fru_decode_product_serial(self, data):
 
-        if data[4] != 00:
+        if data and data[4] != 00:
             start_product_info = ord(data[4]) * 8
             start_format_version = start_product_info
             start_product_info = start_format_version + 1
@@ -171,7 +171,7 @@ class APIHelper():
 
     def fru_decode_product_model(self, data):
 
-        if data[4] != 00:
+        if data and data[4] != 00:
             start_product_info = ord(data[4]) * 8
             start_format_version = start_product_info
             start_product_info = start_format_version + 1
@@ -192,7 +192,7 @@ class APIHelper():
 
     def fru_decode_product_name(self, data):
 
-        if data[4] != 00:
+        if data and data[4] != 00:
             start_product_info = ord(data[4]) * 8
             start_format_version = start_product_info
             start_product_info = start_format_version + 1
