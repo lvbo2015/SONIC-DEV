@@ -54,12 +54,12 @@ PSU_I2C_MAPPING = {
 
 FAN_MUX_HWMON_PATH = "/sys/bus/i2c/devices/i2c-66/i2c-{0}/{0}-0050/"
 PSU_MUX_HWMON_PATH = "/sys/bus/i2c/devices/i2c-68/i2c-{0}/{0}-0050/"
-
+NULL_VAL = 'N/A'
 
 class Fan(FanBase):
     """Platform-specific Fan class"""
 
-    def __init__(self, fan_tray_index, fan_index=0, is_psu_fan=False, psu_index=0, psu_fan_direction=0):
+    def __init__(self, fan_tray_index, fan_index=0, is_psu_fan=False, psu_index=0, psu_fan_direction=NULL_VAL):
         self.fan_index = fan_index
         self.fan_tray_index = fan_tray_index
         self.is_psu_fan = is_psu_fan
@@ -67,8 +67,7 @@ class Fan(FanBase):
             self.psu_index = psu_index
             self.psu_hwmon_path = PSU_HWMON_PATH.format(
                 PSU_I2C_MAPPING[self.psu_index]["i2c_num"], PSU_I2C_MAPPING[self.psu_index]["pmbus_reg"])
-            self.psu_fan_direction = self.FAN_DIRECTION_EXHAUST if psu_fan_direction else self.FAN_DIRECTION_INTAKE
-        self._api_helper = APIHelper()
+            self.psu_fan_direction = psu_fan_direction
         self.index = self.fan_tray_index * 2 + self.fan_index
 
     def __read_fan_sysfs(self, sysfs_file):

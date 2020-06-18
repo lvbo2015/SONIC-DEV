@@ -43,6 +43,7 @@ PSU_INFO_MAPPING = {
 }
 PSU_STATUS_REGISTER = "0xA160"
 HWMON_PATH = "/sys/bus/i2c/devices/i2c-{0}/{0}-00{1}/hwmon"
+I2C_PATH = "/sys/bus/i2c/devices/i2c-{0}/{0}-00{1}/"
 PSU_POWER_DIVIDER = 1000000
 PSU_VOLT_DIVIDER = 1000
 PSU_CUR_DIVIDER = 1000
@@ -60,6 +61,8 @@ class Psu(PsuBase):
         self.index = psu_index
         self.hwmon_path = HWMON_PATH.format(
             PSU_INFO_MAPPING[self.index]["i2c_num"], PSU_INFO_MAPPING[self.index]["pmbus_reg"])
+        self.eeprom_path = I2C_PATH.format(
+            PSU_INFO_MAPPING[self.index]["i2c_num"], PSU_INFO_MAPPING[self.index]["eeprom_reg"])
         self._api_helper = APIHelper()
         for fan_index in range(0, PSU_NUM_FAN[self.index]):
             fan = Fan(fan_index, 0, is_psu_fan=True, psu_index=self.index,
@@ -69,11 +72,11 @@ class Psu(PsuBase):
     def __get_fan_direction(self):
         # DPS-1100FB = Intake
         # DPS-1100AB = exhaust
-        eeprom_path = PSU_MUX_HWMON_PATH.format(
-            ((self.index) + 75), self.index+50)
         fru_pn = self._api_helper.fru_decode_product_name(
-            self._api_helper.read_eeprom_sysfs(eeprom_path, "eeprom"))
-        return 0 if "FB" in fru_pn else 1
+            self._api_helper.read_eeprom_sysfs(self.eeprom_path, "eeprom"))
+        return Fan.FAN_DIRECTION_INTAKE if "FB" in fru_pn \
+            else Fan.FAN_DIRECTION_EXHAUST if "AB" in fru_pn \
+                else Fan.FAN_DIRECTION_NOT_APPLICABLE
 
     def __search_file_by_contain(self, directory, search_str, file_start):
         for dirpath, dirnames, files in os.walk(directory):
@@ -218,9 +221,7 @@ class Psu(PsuBase):
         Returns:
             string: Model/part number of device
         """
-        eeprom_path = PSU_MUX_HWMON_PATH.format(
-            ((self.index) + 75), self.index+50)
-        return self._api_helper.fru_decode_product_model(self._api_helper.read_eeprom_sysfs(eeprom_path, "eeprom"))
+        return self._api_helper.fru_decode_product_model(self._api_helper.read_eeprom_sysfs(self.eeprom_path, "eeprom"))
 
     def get_serial(self):
         """
@@ -228,9 +229,7 @@ class Psu(PsuBase):
         Returns:
             string: Serial number of device
         """
-        eeprom_path = PSU_MUX_HWMON_PATH.format(
-            ((self.index) + 75), self.index+50)
-        return self._api_helper.fru_decode_product_serial(self._api_helper.read_eeprom_sysfs(eeprom_path, "eeprom"))
+        return self._api_helper.fru_decode_product_serial(self._api_helper.read_eeprom_sysfs(self.eeprom_path, "eeprom"))
 
     def get_status(self):
         """
