@@ -25,7 +25,7 @@
  */
 
 #ifndef TEST_MODE
-#define MOD_VERSION "0.5.4"
+#define MOD_VERSION "0.5.5"
 #else
 #define MOD_VERSION "TEST"
 #endif
@@ -867,6 +867,20 @@ static ssize_t qsfp_modprs_show(struct device *dev, struct device_attribute *att
 }
 DEVICE_ATTR_RO(qsfp_modprs);
 
+static ssize_t qsfp_isr_flags_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    u8 data;
+    int err;
+    struct sff_device_data *dev_data = dev_get_drvdata(dev);
+    unsigned int portid = dev_data->portid;
+    err = i2c_xcvr_access(I2C_XCVR_INRT,portid,&data,I2C_SMBUS_READ);
+    if(err < 0){
+        return err;
+    }
+    return sprintf(buf, "0x%2.2x\n", data);
+}
+DEVICE_ATTR_RO(qsfp_isr_flags);
+
 static ssize_t sfp_txfault_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
     u8 data;
@@ -908,6 +922,20 @@ static ssize_t sfp_modabs_show(struct device *dev, struct device_attribute *attr
     return sprintf(buf, "%d\n", (data >> I2C_STAT_MODABS) & 1U);
 }
 DEVICE_ATTR_RO(sfp_modabs);
+
+static ssize_t sfp_isr_flags_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    u8 data;
+    int err;
+    struct sff_device_data *dev_data = dev_get_drvdata(dev);
+    unsigned int portid = dev_data->portid;
+    err = i2c_xcvr_access(I2C_XCVR_INRT,portid,&data,I2C_SMBUS_READ);
+    if(err < 0){
+        return err;
+    }
+    return sprintf(buf, "0x%2.2x\n", data);
+}
+DEVICE_ATTR_RO(sfp_isr_flags);
 
 static ssize_t qsfp_modsel_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -980,6 +1008,35 @@ static ssize_t qsfp_reset_store(struct device *dev, struct device_attribute *att
 }
 DEVICE_ATTR_RW(qsfp_reset);
 
+static ssize_t qsfp_isr_mask_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    u8 data;
+    int err;
+    struct sff_device_data *dev_data = dev_get_drvdata(dev);
+    unsigned int portid = dev_data->portid;
+    err = i2c_xcvr_access(I2C_XCVR_MASK,portid,&data,I2C_SMBUS_READ);
+    if(err < 0){
+        return err;
+    }
+    return sprintf(buf, "0x%2.2x\n", data);
+}
+
+static ssize_t qsfp_isr_mask_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+    ssize_t status;
+    u8 data;
+    struct sff_device_data *dev_data = dev_get_drvdata(dev);
+    unsigned int portid = dev_data->portid;
+
+    status = kstrtou8(buf, 0, &data);
+    if (status == 0) {
+        i2c_xcvr_access(I2C_XCVR_MASK,portid,&data,I2C_SMBUS_WRITE);
+        status = size;
+    }
+    return status;
+}
+DEVICE_ATTR_RW(qsfp_isr_mask);
+
 static ssize_t sfp_txdisable_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
     u8 data;
@@ -1017,15 +1074,48 @@ static ssize_t sfp_txdisable_store(struct device *dev, struct device_attribute *
 }
 DEVICE_ATTR_RW(sfp_txdisable);
 
+static ssize_t sfp_isr_mask_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    u8 data;
+    int err;
+    struct sff_device_data *dev_data = dev_get_drvdata(dev);
+    unsigned int portid = dev_data->portid;
+    err = i2c_xcvr_access(I2C_XCVR_MASK,portid,&data,I2C_SMBUS_READ);
+    if(err < 0){
+        return err;
+    }
+    return sprintf(buf, "0x%2.2x\n", data);
+}
+
+static ssize_t sfp_isr_mask_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+    ssize_t status;
+    u8 data;
+    struct sff_device_data *dev_data = dev_get_drvdata(dev);
+    unsigned int portid = dev_data->portid;
+
+    status = kstrtou8(buf, 0, &data);
+    if (status == 0) {
+        i2c_xcvr_access(I2C_XCVR_MASK,portid,&data,I2C_SMBUS_WRITE);
+        status = size;
+    }
+    return status;
+}
+DEVICE_ATTR_RW(sfp_isr_mask);
+
 static struct attribute *sff_attrs[] = {
     &dev_attr_qsfp_modirq.attr,
     &dev_attr_qsfp_modprs.attr,
     &dev_attr_qsfp_modsel.attr,
     &dev_attr_qsfp_reset.attr,
+    &dev_attr_qsfp_isr_flags.attr,
+    &dev_attr_qsfp_isr_mask.attr,
     &dev_attr_sfp_txfault.attr,
     &dev_attr_sfp_rxlos.attr,
     &dev_attr_sfp_modabs.attr,
     &dev_attr_sfp_txdisable.attr,
+    &dev_attr_sfp_isr_flags.attr,
+    &dev_attr_sfp_isr_mask.attr,
     NULL,
 };
 
@@ -2413,7 +2503,6 @@ static long fpgafw_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
             switch (status_reg) {
             case 0x0000 : status_reg = 0x8000;
                 break;
-
             case 0x8080 : status_reg = 0x80C0;
                 break;
             case 0x80C0 : status_reg = 0x80F0;
