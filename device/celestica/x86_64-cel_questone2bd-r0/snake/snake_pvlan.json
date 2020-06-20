@@ -1,0 +1,172 @@
+{
+    "VLAN_MEMBER": {
+        "Vlan101|Ethernet1": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan102|Ethernet2": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan103|Ethernet3": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan104|Ethernet4": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan105|Ethernet5": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan106|Ethernet6": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan107|Ethernet7": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan108|Ethernet8": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan109|Ethernet9": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan110|Ethernet10": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan111|Ethernet11": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan112|Ethernet12": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan113|Ethernet13": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan114|Ethernet14": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan115|Ethernet15": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan116|Ethernet16": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan117|Ethernet17": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan118|Ethernet18": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan119|Ethernet19": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan120|Ethernet20": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan121|Ethernet21": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan122|Ethernet22": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan123|Ethernet23": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan124|Ethernet24": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan125|Ethernet25": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan126|Ethernet26": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan127|Ethernet27": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan128|Ethernet28": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan129|Ethernet29": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan130|Ethernet30": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan131|Ethernet31": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan132|Ethernet32": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan133|Ethernet33": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan134|Ethernet34": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan135|Ethernet35": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan136|Ethernet36": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan137|Ethernet37": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan138|Ethernet38": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan139|Ethernet39": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan140|Ethernet40": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan141|Ethernet41": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan142|Ethernet42": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan143|Ethernet43": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan144|Ethernet44": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan145|Ethernet45": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan146|Ethernet46": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan147|Ethernet47": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan148|Ethernet48": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan149|Ethernet49": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan150|Ethernet50": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan151|Ethernet51": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan152|Ethernet52": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan153|Ethernet53": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan154|Ethernet54": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan155|Ethernet55": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan156|Ethernet56": {
+            "tagging_mode": "untagged"
+        }
+    }
+}
