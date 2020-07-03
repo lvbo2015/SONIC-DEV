@@ -19,9 +19,6 @@ except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
 
-FAN_NAME_LIST = ["FAN-1F", "FAN-1R", "FAN-2F",
-                 "FAN-2R", "FAN-3F", "FAN-3R", "FAN-4F", "FAN-4R"]
-
 FAN_SYSFS_PATH = "/sys/bus/i2c/drivers/fancpld/66-000d/"
 FAN_DIRECTION_BIT = 1
 FAN_PRESENT_BIT = 1
@@ -36,8 +33,9 @@ FAN_LED_SYSFS = "fan{}_led"
 FAN_LED_GREEN_CMD = "0x1"
 FAN_LED_RED_CMD = "0x2"
 FAN_LED_OFF_CMD = "0x3"
+
 FAN_FRONT_MAX_RPM = 29700
-FAN_REAR_MAX_RPM = 24700
+FAN_REAR_MAX_RPM = 24900
 
 PSU_FAN_MAX_RPM = 30000
 PSU_HWMON_PATH = "/sys/bus/i2c/devices/i2c-{0}/{0}-00{1}/hwmon"
@@ -52,9 +50,63 @@ PSU_I2C_MAPPING = {
     },
 }
 
+FAN_MAPPING = {
+    0: {
+        "name": 'FAN-1F',
+        "fan_tray": '4',
+        "fan_idx": '7',
+        "i2c": 8
+    },
+    1: {
+        "name": 'FAN-1R',
+        "fan_tray": '4',
+        "fan_idx": '8',
+        "i2c": 8
+    },
+    2: {
+        "name": 'FAN-2F',
+        "fan_tray": '3',
+        "fan_idx": '5',
+        "i2c": 6
+    },
+    3: {
+        "name": 'FAN-2R',
+        "fan_tray": '3',
+        "fan_idx": '6',
+        "i2c": 6
+    },
+    4: {
+        "name": 'FAN-3F',
+        "fan_tray": '2',
+        "fan_idx": '3',
+        "i2c": 4
+    },
+    5: {
+        "name": 'FAN-3R',
+        "fan_tray": '2',
+        "fan_idx": '4',
+        "i2c": 4
+    },
+    6: {
+        "name": 'FAN-4F',
+        "fan_tray": '1',
+        "fan_idx": '1',
+        "i2c": 2
+    },
+    7: {
+        "name": 'FAN-4R',
+        "fan_tray": '1',
+        "fan_idx": '2',
+        "i2c": 2
+    }
+}
+
+
 FAN_MUX_HWMON_PATH = "/sys/bus/i2c/devices/i2c-66/i2c-{0}/{0}-0050/"
 PSU_MUX_HWMON_PATH = "/sys/bus/i2c/devices/i2c-68/i2c-{0}/{0}-0050/"
 NULL_VAL = 'N/A'
+NUM_FAN_SYSFS = 8
+
 
 class Fan(FanBase):
     """Platform-specific Fan class"""
@@ -63,12 +115,13 @@ class Fan(FanBase):
         self.fan_index = fan_index
         self.fan_tray_index = fan_tray_index
         self.is_psu_fan = is_psu_fan
+        self._api_helper = APIHelper()
         if self.is_psu_fan:
             self.psu_index = psu_index
             self.psu_hwmon_path = PSU_HWMON_PATH.format(
                 PSU_I2C_MAPPING[self.psu_index]["i2c_num"], PSU_I2C_MAPPING[self.psu_index]["pmbus_reg"])
             self.psu_fan_direction = psu_fan_direction
-        self.index = self.fan_tray_index * 2 + self.fan_index
+        self.index = (self.fan_tray_index * 2) + self.fan_index
 
     def __read_fan_sysfs(self, sysfs_file):
         sysfs_path = os.path.join(FAN_SYSFS_PATH, sysfs_file)
@@ -97,7 +150,7 @@ class Fan(FanBase):
             return self.psu_fan_direction
 
         fan_direction_val = self.__read_fan_sysfs(
-            FAN_DIRECTION_SYSFS.format(self.fan_tray_index+1))
+            FAN_DIRECTION_SYSFS.format(FAN_MAPPING[self.index]['fan_tray']))
 
         return self.FAN_DIRECTION_EXHAUST if fan_direction_val == "0x0" else self.FAN_DIRECTION_INTAKE
 
@@ -107,10 +160,6 @@ class Fan(FanBase):
         Returns:
             An integer, the percentage of full fan speed, in the range 0 (off)
                  to 100 (full speed)
-
-        Note:
-            M = 150
-            Max = 38250 RPM
         """
         speed_rpm = 0
         if self.is_psu_fan:
@@ -127,8 +176,13 @@ class Fan(FanBase):
                 speed = int(float(speed_rpm) / PSU_FAN_MAX_RPM * 100)
         else:
             speed_rpm = self.__read_fan_sysfs(
-                FAN_INPUT_SYSFS.format(self.fan_tray_index+1))
-            fan_max_rpm = FAN_FRONT_MAX_RPM if "F" in self.get_name() else FAN_REAR_MAX_RPM
+                FAN_INPUT_SYSFS.format(FAN_MAPPING[self.index]['fan_idx']))
+
+            if self.get_direction() == self.FAN_DIRECTION_INTAKE:
+                fan_max_rpm = FAN_FRONT_MAX_RPM if "R" in self.get_name() else FAN_REAR_MAX_RPM
+            else:
+                fan_max_rpm = FAN_FRONT_MAX_RPM if "F" in self.get_name() else FAN_REAR_MAX_RPM
+
             speed = int(float(speed_rpm) / fan_max_rpm * 100)
 
         return speed
@@ -176,7 +230,7 @@ class Fan(FanBase):
             return False
 
         speed_hex = hex(int(float(speed)/100 * 255))
-        return self.__write_fan_sysfs(FAN_PWM_SYSFS.format(self.fan_tray_index+1), speed_hex)
+        return self.__write_fan_sysfs(FAN_PWM_SYSFS.format(FAN_MAPPING[self.index]['fan_tray']), speed_hex)
 
     def set_status_led(self, color):
         """
@@ -198,7 +252,7 @@ class Fan(FanBase):
             self.STATUS_LED_COLOR_OFF: FAN_LED_OFF_CMD
         }.get(color)
 
-        return self.__write_fan_sysfs(FAN_LED_SYSFS.format(self.fan_tray_index+1), led_cmd)
+        return self.__write_fan_sysfs(FAN_LED_SYSFS.format(FAN_MAPPING[self.index]['fan_tray']), led_cmd)
 
     def get_status_led(self):
         """
@@ -223,7 +277,7 @@ class Fan(FanBase):
             return self.STATUS_LED_COLOR_OFF
 
         fan_led_raw = self.__read_fan_sysfs(
-            FAN_LED_SYSFS.format(self.fan_tray_index+1))
+            FAN_LED_SYSFS.format(FAN_MAPPING[self.index]['fan_tray']))
 
         fan_status_led = {
             "0x1": self.STATUS_LED_COLOR_GREEN,
@@ -243,7 +297,7 @@ class Fan(FanBase):
             Returns:
             string: The name of the device
         """
-        fan_name = FAN_NAME_LIST[self.fan_tray_index*2 + self.fan_index] if not self.is_psu_fan else "PSU-{} FAN-{}".format(
+        fan_name = FAN_MAPPING[self.index]['name'] if not self.is_psu_fan else "PSU-{} FAN-{}".format(
             self.psu_index+1, self.fan_index+1)
 
         return fan_name
@@ -257,9 +311,10 @@ class Fan(FanBase):
         if self.is_psu_fan:
             return True
 
-        fan_presence_bit_val = "0"
+        fan_presence_bit_val = self.__read_fan_sysfs(
+            FAN_PRESENT_SYSFS.format(FAN_MAPPING[self.index]['fan_tray']))
 
-        return True if fan_presence_bit_val == "0" else False
+        return True if fan_presence_bit_val == "0x0" else False
 
     def get_model(self):
         """
@@ -270,7 +325,7 @@ class Fan(FanBase):
         if self.is_psu_fan:
             return 'N/A'
 
-        temp_file = FAN_MUX_HWMON_PATH.format((self.fan_tray_index+1) * 2)
+        temp_file = FAN_MUX_HWMON_PATH.format(FAN_MAPPING[self.index]['i2c'])
         return self._api_helper.fru_decode_product_model(self._api_helper.read_eeprom_sysfs(temp_file, "eeprom"))
 
     def get_serial(self):
@@ -282,7 +337,7 @@ class Fan(FanBase):
         if self.is_psu_fan:
             return 'N/A'
 
-        temp_file = FAN_MUX_HWMON_PATH.format((self.fan_tray_index+1) * 2)
+        temp_file = FAN_MUX_HWMON_PATH.format(FAN_MAPPING[self.index]['i2c'])
         return self._api_helper.fru_decode_product_serial(self._api_helper.read_eeprom_sysfs(temp_file, "eeprom"))
 
     def get_status(self):
