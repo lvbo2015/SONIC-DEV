@@ -93,47 +93,6 @@ class Chassis(ChassisBase):
             component = Component(index)
             self._component_list.append(component)
 
-    # def __initialize_interrupts(self):
-    #     # Initial Interrupt MASK for QSFP, SFP
-    #     sfp_info_obj = {}
-
-    #     present_en = 0x10
-    #     Rxlos_IntL_en = 0x01
-    #     event_mask = present_en
-
-    #     for index in range(NUM_SFP):
-    #         port_num = index + 1
-    #         if port_num in range(SFP_PORT_START, SFP_PORT_END+1):
-    #             port_name = "SFP{}".format(str(port_num - SFP_PORT_START + 1))
-    #             port_type = "sfp"
-    #             sysfs_prs_file = "{}_modabs".format(port_type)
-    #         elif port_num in range(QSFP_PORT_START, QSFP_PORT_END+1):
-    #             port_name = "QSFP{}".format(
-    #                 str(port_num - QSFP_PORT_START + 1))
-    #             port_type = "qsfp"
-    #             sysfs_prs_file = "{}_modprs".format(port_type)
-
-    #         sfp_info_obj[index] = {}
-    #         sfp_info_obj[index]['intmask_sysfs'] = PATH_INTMASK_SYSFS.format(
-    #             PORT_INFO_PATH,
-    #             port_name=port_name,
-    #             type_prefix=port_type)
-
-    #         sfp_info_obj[index]['int_sysfs'] = PATH_INT_SYSFS.format(
-    #             PORT_INFO_PATH,
-    #             port_name=port_name,
-    #             type_prefix=port_type)
-
-    #         sfp_info_obj[index]['prs_sysfs'] = PATH_PRS_SYSFS.format(
-    #             PORT_INFO_PATH,
-    #             port_name=port_name,
-    #             prs_file_name=sysfs_prs_file)
-
-    #         self._api_helper.write_file(
-    #             sfp_info_obj[index]["intmask_sysfs"], hex(event_mask))
-
-    #     self.sfp_info_obj = sfp_info_obj
-
     def get_base_mac(self):
         """
         Retrieves the base MAC address for the chassis
