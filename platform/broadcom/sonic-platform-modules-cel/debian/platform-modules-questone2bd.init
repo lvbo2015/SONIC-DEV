@@ -20,6 +20,7 @@ start)
         modprobe pmbus_core
         modprobe i2c-imc allow_unsafe_access=1
         modprobe baseboard_cpld
+        modprobe i2c-ocores-polling
         modprobe switchboard_fpga allow_unsafe_i2c_access=1
         modprobe mc24lc64t
         modprobe i2c_dev_sysfs
@@ -50,6 +51,9 @@ start)
         # Populate temperature sensors
         echo lm75b 0x48 > /sys/bus/i2c/devices/i2c-9/new_device
         echo lm75b 0x4d > /sys/bus/i2c/devices/i2c-67/new_device
+
+        # Populate voltage sensors reading
+        echo max11617 0x35 > /sys/bus/i2c/devices/i2c-71/new_device
 
         # Populate EEPROM
         ## FAN
