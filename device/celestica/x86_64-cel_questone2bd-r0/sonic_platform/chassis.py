@@ -280,11 +280,11 @@ class Chassis(ChassisBase):
                          -----------------------------------------------------------------
                          device   |     device_id       |  device_event  |  annotate
                          -----------------------------------------------------------------
-                         'fan'          '<fan number>'     '0'              Fan inserted
-                                                           '1'              Fan removed
+                         'fan'          '<fan number>'     '0'              Fan removed
+                                                           '1'              Fan inserted
 
-                         'sfp'          '<sfp number>'     '0'              Sfp pluged out
-                                                           '1'              Sfp pluged in
+                         'sfp'          '<sfp number>'     '0'              Sfp removed
+                                                           '1'              Sfp inserted
                                                            '2'              I2C bus stuck
                                                            '3'              Bad eeprom
                                                            '4'              Unsupported cable
@@ -294,11 +294,12 @@ class Chassis(ChassisBase):
                          'voltage'      '<monitor point>'  '0'              Vout normal
                                                            '1'              Vout abnormal
                          --------------------------------------------------------------------
-                  Ex. {'fan':{'0':'0', '2':'1'}, 'sfp':{'11':'0'}, 'voltage':{'U20':'1', 'U1':'0'}}
+                  Ex. {'fan':{'0':'0', '2':'1'}, 'sfp':{'11':'0', '12':'1'},
+                       'voltage':{'U20':'0', 'U21':'1'}}
                   Indicates that:
                      fan 0 has been removed, fan 2 has been inserted.
                      sfp 11 has been removed, sfp 12 has been inserted.
-                     monitored voltage U20 became abnormal, voltage U21 became normal.
+                     monitored voltage U20 became normal, voltage U21 became abnormal.
                   Note: For sfp, when event 3-6 happened, the module will not be avalaible,
                         XCVRD shall stop to read eeprom before SFP recovered from error status.
         """
@@ -315,20 +316,22 @@ class Chassis(ChassisBase):
         voltage_event = VoltageEvent()
 
         cur_fan_state = fan_event.get_fan_state()
+        cur_volt_state = voltage_event.get_voltage_state()
         start_milli_time = int(round(time.time() * 1000))
         int_sfp, int_fan, int_volt = {}, {}, {}
 
-        sleep_time = min(timeout, POLL_INTERVAL)
+        sleep_time = min(
+            timeout, POLL_INTERVAL) if timeout != 0 else POLL_INTERVAL
         while True:
             chk_sfp = sfp_event.check_all_port_interrupt_event()
             int_sfp = sfp_event.update_port_event_object(
                 chk_sfp, int_sfp) if chk_sfp else int_sfp
             int_fan = fan_event.check_fan_status(cur_fan_state, int_fan)
-            int_volt = voltage_event.get_voltage_int()
+            int_volt = voltage_event.check_voltage_status(cur_volt_state, int_volt)
 
             current_milli_time = int(round(time.time() * 1000))
             if (int_sfp or int_fan or int_volt) or \
-                    ( timeout != 0 and current_milli_time - start_milli_time > timeout):
+                    (timeout != 0 and current_milli_time - start_milli_time > timeout):
                 break
 
             time.sleep(sleep_time)

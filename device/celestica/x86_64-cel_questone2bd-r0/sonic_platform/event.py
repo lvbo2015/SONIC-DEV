@@ -101,8 +101,8 @@ class SfpEvent:
 class FanEvent:
     ''' Listen to insert/remove fan events '''
 
-    FAN_INSERT_STATE = '0'
-    FAN_REMOVE_STATE = '1'
+    FAN_INSERT_STATE = '1'
+    FAN_REMOVE_STATE = '0'
 
     def __init__(self, fan_list):
         self.fan_list = fan_list
@@ -190,15 +190,15 @@ class VoltageEvent:
             PLATFORM_PATH, SWITCH_BRD_PLATFORM, self.VOLTAGE_PATH)
         self.voltage_idx = [0, 1, 8]
         self._api_helper = APIHelper()
-        self.voltage_scale = self.get_voltage_scale()
+        self.voltage_scale = self._get_voltage_scale()
 
-    def get_voltage_scale(self):
+    def _get_voltage_scale(self):
         voltage_scale_path = os.path.join(
             self.voltage_path, self.VOLTAGE_SCALE_SYSFS)
         get_voltage_scale = self._api_helper.read_txt_file(voltage_scale_path)
         return float(get_voltage_scale)
 
-    def get_voltage_int(self):
+    def get_voltage_state(self):
         voltage_mv_dict = {}
         for idx in range(0, len(self.VOLTAGE_CONFIG)):
             voltage_raw_path = os.path.join(
@@ -213,6 +213,14 @@ class VoltageEvent:
             max_v = self.VOLTAGE_CONFIG[idx]['max']
             min_v = self.VOLTAGE_CONFIG[idx]['min']
 
+            voltage_mv_dict[v_name] = self.VOLTAGE_NORMAL_EVENT
             if voltage_mV > max_v or voltage_mV < min_v:
                 voltage_mv_dict[v_name] = self.VOLTAGE_ABNORMAL_EVENT
         return voltage_mv_dict
+
+    def check_voltage_status(self, cur_voltage_dict, int_voltage):
+        voltage_dict = self.get_voltage_state()
+        for v_name in voltage_dict:
+            if voltage_dict[v_name] != cur_voltage_dict[v_name]:
+                int_voltage[v_name] = voltage_dict[v_name]
+        return int_voltage
