@@ -48,6 +48,7 @@ class Chassis(ChassisBase):
         self.sfp_module_initialized = False
         self.fan_module_initialized = False
         self.__initialize_eeprom()
+        self.__initialize_fan()
 
         if not self._api_helper.is_host():
             self.__initialize_fan()
@@ -282,8 +283,8 @@ class Chassis(ChassisBase):
                          'fan'          '<fan number>'     '0'              Fan inserted
                                                            '1'              Fan removed
 
-                         'sfp'          '<sfp number>'     '0'              Sfp pluged in
-                                                           '1'              Sfp pluged out
+                         'sfp'          '<sfp number>'     '0'              Sfp pluged out
+                                                           '1'              Sfp pluged in
                                                            '2'              I2C bus stuck
                                                            '3'              Bad eeprom
                                                            '4'              Unsupported cable
@@ -293,8 +294,7 @@ class Chassis(ChassisBase):
                          'voltage'      '<monitor point>'  '0'              Vout normal
                                                            '1'              Vout abnormal
                          --------------------------------------------------------------------
-                  Ex. {'fan':{'0':'0', '2':'1'}, 'sfp':{'11':'0'}, 'sfp':{'12':'1'},
-                       'voltage':{'U20':'1', 'U1':'0'}}
+                  Ex. {'fan':{'0':'0', '2':'1'}, 'sfp':{'11':'0'}, 'voltage':{'U20':'1', 'U1':'0'}}
                   Indicates that:
                      fan 0 has been removed, fan 2 has been inserted.
                      sfp 11 has been removed, sfp 12 has been inserted.
@@ -318,6 +318,7 @@ class Chassis(ChassisBase):
         start_milli_time = int(round(time.time() * 1000))
         int_sfp, int_fan, int_volt = {}, {}, {}
 
+        sleep_time = min(timeout, POLL_INTERVAL)
         while True:
             chk_sfp = sfp_event.check_all_port_interrupt_event()
             int_sfp = sfp_event.update_port_event_object(
@@ -326,11 +327,11 @@ class Chassis(ChassisBase):
             int_volt = voltage_event.get_voltage_int()
 
             current_milli_time = int(round(time.time() * 1000))
-            if timeout == 0 and (int_sfp or int_fan or int_volt) or \
-                    timeout != 0 and (current_milli_time - start_milli_time > timeout):
+            if (int_sfp or int_fan or int_volt) or \
+                    ( timeout != 0 and current_milli_time - start_milli_time > timeout):
                 break
 
-            time.sleep(POLL_INTERVAL)
+            time.sleep(sleep_time)
 
         change_dict = dict()
         change_dict['fan'] = int_fan
