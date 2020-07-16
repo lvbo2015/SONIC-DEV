@@ -48,7 +48,6 @@ class Chassis(ChassisBase):
         self.sfp_module_initialized = False
         self.fan_module_initialized = False
         self.__initialize_eeprom()
-        self.__initialize_fan()
 
         if not self._api_helper.is_host():
             self.__initialize_fan()
