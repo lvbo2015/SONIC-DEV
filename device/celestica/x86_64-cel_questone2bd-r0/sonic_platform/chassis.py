@@ -38,11 +38,6 @@ TLV_EEPROM_I2C_ADDR = 56
 BASE_CPLD_PLATFORM = "questone2bd.cpldb"
 BASE_GETREG_PATH = "/sys/devices/platform/{}/getreg".format(BASE_CPLD_PLATFORM)
 
-SWITCH_BRD_PLATFORM = "questone2bd.switchboard"
-PORT_INFO_PATH = "/sys/devices/platform/{}/SFF".format(SWITCH_BRD_PLATFORM)
-PATH_INT_SYSFS = "{0}/{port_name}/{type_prefix}_isr_flags"
-PATH_INTMASK_SYSFS = "{0}/{port_name}/{type_prefix}_isr_mask"
-PATH_PRS_SYSFS = "{0}/{port_name}/{prs_file_name}"
 
 class Chassis(ChassisBase):
     """Platform-specific Chassis class"""
@@ -51,14 +46,13 @@ class Chassis(ChassisBase):
         ChassisBase.__init__(self)
         self._api_helper = APIHelper()
         self.sfp_module_initialized = False
+        self.fan_module_initialized = False
         self.__initialize_eeprom()
-        self.POLL_INTERVAL = 1
 
         if not self._api_helper.is_host():
             self.__initialize_fan()
             self.__initialize_psu()
             self.__initialize_thermals()
-            self.__initialize_interrupts()
         else:
             self.__initialize_components()
 
@@ -81,6 +75,7 @@ class Chassis(ChassisBase):
             for fan_index in range(0, NUM_FAN):
                 fan = Fan(fant_index, fan_index)
                 self._fan_list.append(fan)
+        self.fan_module_initialized = True
 
     def __initialize_thermals(self):
         from sonic_platform.thermal import Thermal
@@ -97,46 +92,6 @@ class Chassis(ChassisBase):
         for index in range(0, NUM_COMPONENT):
             component = Component(index)
             self._component_list.append(component)
-
-    def __initialize_interrupts(self):
-        # Initial Interrupt MASK for QSFP, SFP
-        sfp_info_obj = {}
-
-        present_en = 0x10
-        Rxlos_IntL_en = 0x01
-        event_mask = present_en
-
-        for index in range(NUM_SFP):
-            port_num = index + 1
-            if port_num in range(SFP_PORT_START, SFP_PORT_END+1):
-                port_name = "SFP{}".format(str(port_num - SFP_PORT_START + 1))
-                port_type = "sfp"
-                sysfs_prs_file = "{}_modabs".format(port_type)
-            elif port_num in range(QSFP_PORT_START, QSFP_PORT_END+1):
-                port_name = "QSFP{}".format(str(port_num - QSFP_PORT_START + 1))
-                port_type = "qsfp"
-                sysfs_prs_file = "{}_modprs".format(port_type)
-
-            sfp_info_obj[index] = {}
-            sfp_info_obj[index]['intmask_sysfs'] = PATH_INTMASK_SYSFS.format(
-                PORT_INFO_PATH,
-                port_name = port_name,
-                type_prefix = port_type)
-
-            sfp_info_obj[index]['int_sysfs'] = PATH_INT_SYSFS.format(
-                PORT_INFO_PATH,
-                port_name = port_name,
-                type_prefix = port_type)
-
-            sfp_info_obj[index]['prs_sysfs'] = PATH_PRS_SYSFS.format(
-                PORT_INFO_PATH,
-                port_name = port_name,
-                prs_file_name = sysfs_prs_file)
-
-            self._api_helper.write_file(
-                sfp_info_obj[index]["intmask_sysfs"], hex(event_mask))
-
-        self.sfp_info_obj = sfp_info_obj
 
     def get_base_mac(self):
         """
@@ -304,78 +259,85 @@ class Chassis(ChassisBase):
     ###################### Event methods #########################
     ##############################################################
 
-    def __is_port_device_present(self, port_idx):
-        prs_path = self.sfp_info_obj[port_idx]["prs_sysfs"]
-        is_present = 1 - int(self._api_helper.read_txt_file(prs_path))
-        return is_present
-
-    def __update_port_event_object(self, interrup_devices):
-        port_dict = {}
-        event_obj = {'sfp':port_dict}
-        for port_idx in interrup_devices:
-            device_id = str(port_idx + 1)
-            port_dict[device_id] = str(self.__is_port_device_present(port_idx))
-
-        if len(port_dict):
-            event_obj['sfp'] = port_dict
-
-        return event_obj
-
-    def __check_all_port_interrupt_event(self):
-        interrupt_devices = {}
-        for i in range(NUM_SFP):
-            int_sysfs = self.sfp_info_obj[i]["int_sysfs"]
-            interrupt_flags = self._api_helper.read_txt_file(int_sysfs)
-            if interrupt_flags != '0x00':
-                interrupt_devices[i] = 1
-        return interrupt_devices
-
     def get_change_event(self, timeout=0):
         """
         Returns a nested dictionary containing all devices which have
         experienced a change at chassis level
+
         Args:
             timeout: Timeout in milliseconds (optional). If timeout == 0,
                 this method will block until a change is detected.
+
         Returns:
             (bool, dict):
-                - True if call successful, False if not;
-                - A nested dictionary where key is a device type,
-                  value is a dictionary with key:value pairs in the
-                  format of {'device_id':'device_event'},
-                  where device_id is the device ID for this device and
-                        device_event,
-                             status='1' represents device inserted,
-                             status='0' represents device removed.
-                  Ex. {'fan':{'0':'0', '2':'1'}, 'sfp':{'11':'0'}}
-                      indicates that fan 0 has been removed, fan 2
-                      has been inserted and sfp 11 has been removed.
+                - bool: True if call successful, False if not;
+                - dict: A nested dictionary where key is a device type,
+                        value is a dictionary with key:value pairs in the format of
+                        {'device_id':'device_event'}, where device_id is the device ID
+                        for this device and device_event.
+                        The known devices's device_id and device_event was defined as table below.
+                         -----------------------------------------------------------------
+                         device   |     device_id       |  device_event  |  annotate
+                         -----------------------------------------------------------------
+                         'fan'          '<fan number>'     '0'              Fan removed
+                                                           '1'              Fan inserted
+
+                         'sfp'          '<sfp number>'     '0'              Sfp removed
+                                                           '1'              Sfp inserted
+                                                           '2'              I2C bus stuck
+                                                           '3'              Bad eeprom
+                                                           '4'              Unsupported cable
+                                                           '5'              High Temperature
+                                                           '6'              Bad cable
+
+                         'voltage'      '<monitor point>'  '0'              Vout normal
+                                                           '1'              Vout abnormal
+                         --------------------------------------------------------------------
+                  Ex. {'fan':{'0':'0', '2':'1'}, 'sfp':{'11':'0', '12':'1'},
+                       'voltage':{'U20':'0', 'U21':'1'}}
+                  Indicates that:
+                     fan 0 has been removed, fan 2 has been inserted.
+                     sfp 11 has been removed, sfp 12 has been inserted.
+                     monitored voltage U20 became normal, voltage U21 became abnormal.
+                  Note: For sfp, when event 3-6 happened, the module will not be avalaible,
+                        XCVRD shall stop to read eeprom before SFP recovered from error status.
         """
-        if timeout == 0:
-            timer = self.POLL_INTERVAL
-            while True:
-                interrupt_devices = self.__check_all_port_interrupt_event()
-                if len(interrupt_devices):
-                    break
-                else:
-                    time.sleep(timer)
-            events_dict = self.__update_port_event_object(interrupt_devices)
-            return (True, events_dict)
-        else:
-            timeout = timeout / float(1000)
-            timer = min(timeout, self.POLL_INTERVAL)
+        from sonic_platform.event import FanEvent, SfpEvent, VoltageEvent, POLL_INTERVAL
 
-            while True:
-                start_time = time.time()
-                interrupt_devices = self.__check_all_port_interrupt_event()
-                if len(interrupt_devices):
-                    break
+        if not self.fan_module_initialized:
+            self.__initialize_fan()
 
-                if timeout <= 0:
-                    break
-                else:
-                    time.sleep(timer)
-                elasped_time = time.time() - start_time
-                timeout = round(timeout - elasped_time, 3)
-            events_dict = self.__update_port_event_object(interrupt_devices)
-            return (True, events_dict)
+        if not self.sfp_module_initialized:
+            self.__initialize_sfp()
+
+        fan_event = FanEvent(self._fan_list)
+        sfp_event = SfpEvent(self._sfp_list)
+        voltage_event = VoltageEvent()
+
+        cur_fan_state = fan_event.get_fan_state()
+        cur_volt_state = voltage_event.get_voltage_state()
+        start_milli_time = int(round(time.time() * 1000))
+        int_sfp, int_fan, int_volt = {}, {}, {}
+
+        sleep_time = min(
+            timeout, POLL_INTERVAL) if timeout != 0 else POLL_INTERVAL
+        while True:
+            chk_sfp = sfp_event.check_all_port_interrupt_event()
+            int_sfp = sfp_event.update_port_event_object(
+                chk_sfp, int_sfp) if chk_sfp else int_sfp
+            int_fan = fan_event.check_fan_status(cur_fan_state, int_fan)
+            int_volt = voltage_event.check_voltage_status(cur_volt_state, int_volt)
+
+            current_milli_time = int(round(time.time() * 1000))
+            if (int_sfp or int_fan or int_volt) or \
+                    (timeout != 0 and current_milli_time - start_milli_time > timeout):
+                break
+
+            time.sleep(sleep_time)
+
+        change_dict = dict()
+        change_dict['fan'] = int_fan
+        change_dict['sfp'] = int_sfp
+        change_dict['voltage'] = int_volt
+
+        return True, change_dict
