@@ -262,7 +262,7 @@ class FwMgrUtil(FwMgrUtilBase):
         bmc_ver = "N/A"
         data = self.get_from_bmc(self.bmc_info_uri)
         if not data or "Version" not in data:
-            return bmc_ver
+            return self.old_bmc_get_version()
 
         return data["Version"]
 
@@ -425,7 +425,8 @@ class FwMgrUtil(FwMgrUtilBase):
             print("Upload bmc image %s to BMC done" % fw_path)
             cur_bmc_ver = self.get_bmc_version()
             chk_old_bmc = self.old_bmc_get_version()
-            if cur_bmc_ver == 'N/A' and chk_old_bmc:
+            if cur_bmc_ver == chk_old_bmc and \
+                cur_bmc_ver.find("AliBMC") == -1:
                 return self.old_bmc_upgrade(fw_path, fw_extra)
 
             # Fill json param, "Name", "Path", "Flash"
@@ -756,6 +757,7 @@ class FwMgrUtil(FwMgrUtilBase):
             img_list = fw_extra.split(":")
             for fpath in img_list:
                 if fpath == "none":
+                    fw_files.append("/tmp/none")
                     continue
 
                 fname = os.path.basename(fpath)
