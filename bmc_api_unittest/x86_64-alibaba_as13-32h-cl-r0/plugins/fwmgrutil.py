@@ -152,8 +152,8 @@ class FwMgrUtil(FwMgrUtilBase):
         fw_extra_str = str(fw_extra).lower()
 
         json_data = dict()
-        json_data["path"] = "admin@240.1.1.2:%s" % fw_path
-        json_data["password"] = "admin"
+        json_data["path"] = "root@127.0.0.1:/tmp/%s" % os.path.basename(fw_path)
+        json_data["password"] = self.get_bmc_pass()
 
         # get running bmc
         json_tmp = dict()
@@ -173,19 +173,22 @@ class FwMgrUtil(FwMgrUtilBase):
             return False
 
         # umount /mnt/data
-        umount_json = dict()
-        umount_json["data"] = "pkill rsyslogd; umount -f /mnt/data/"
-        r = requests.post(self.old_raw_cmd_uri, json=umount_json)
-        if r.status_code != 200:
-            print("Fail, message = Unable to umount /mnt/data")
-            return False
+        #umount_json = dict()
+        #umount_json["data"] = "pkill rsyslogd; umount -f /mnt/data/"
+        #r = requests.post(self.old_raw_cmd_uri, json=umount_json)
+        #if r.status_code != 200:
+        #    print("Fail, message = Unable to umount /mnt/data")
+        #    return False
 
         # Set flash
         flash = fw_extra_str if fw_extra_str in [
             "master", "slave", "both"] else "both"
         if fw_extra_str == "pingpong":
             flash = "master" if current_bmc == "slave" else "slave"
-        json_data["flash"] = flash
+            # WA for 1.3.8 or earlier version
+            json_data["flash"] = "slave"
+        else:
+            json_data["flash"] = flash
 
         # Install BMC
         if flash == "both":
@@ -199,7 +202,7 @@ class FwMgrUtil(FwMgrUtilBase):
             json_data["flash"] = "slave"
 
         print("Install BMC as %s mode" % json_data["flash"])
-        r = requests.post(self.old_bmc_info_uri, json=json_data)
+        r = requests.post(self.old_bmc_info_uri, json=json_data, timeout=300)
         if r.status_code == 200 and 'success' in r.json().get('result'):
 
             if fw_extra_str == "pingpong":
